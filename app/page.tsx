@@ -1,40 +1,16 @@
 "use client";
 
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { ArrowLeft, ArrowRight, ChevronDown, Menu, Plus, Search, ShoppingBag, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Menu, Minus, Plus, Search, ShoppingBag, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
-type ProductPhoto = { id: string; label: string; image: string; alt: string };
-type Product = {
-  id: number;
-  name: string;
-  price: number;
-  color: string;
-  image: string;
-  image2: string;
-  note: string;
-  photos: ProductPhoto[];
-};
-
-const teePhotos: ProductPhoto[] = [
-  { id: "front", label: "Front model", image: "/images/product/same-shit-front-model.png", alt: "Model front view wearing Same shit Different day oversized T-shirt" },
-  { id: "back", label: "Back model", image: "/images/product/same-shit-back-model.png", alt: "Model back view wearing white oversized T-shirt" },
-  { id: "print", label: "Print detail", image: "/images/product/same-shit-print-flatlay.png", alt: "White oversized T-shirt flat lay showing Same shit Different day print" },
-  { id: "collar", label: "Collar detail", image: "/images/product/same-shit-collar-detail.png", alt: "Close detail of white T-shirt collar and fabric" },
+type Product = { id: number; name: string; price: number; color: string; image: string; image2: string; note: string };
+const products: Product[] = [
+  { id: 1, name: "Heavyweight Tee 01", price: 1499, color: "Washed Charcoal", image: "/images/washed-charcoal.png", image2: "/images/campaign-hero.png", note: "240 GSM / Relaxed structure" },
+  { id: 2, name: "Heavyweight Tee 02", price: 1499, color: "Bone", image: "/images/bone-editorial.png", image2: "/images/campaign-hero.png", note: "240 GSM / Soft handfeel" },
+  { id: 3, name: "Essential Tee 01", price: 1299, color: "Deep Black", image: "/images/campaign-hero.png", image2: "/images/washed-charcoal.png", note: "220 GSM / Everyday weight" },
+  { id: 4, name: "Essential Tee 02", price: 1299, color: "Ecru", image: "/images/bone-editorial.png", image2: "/images/washed-charcoal.png", note: "220 GSM / Everyday weight" },
 ];
-
-const mainProduct: Product = {
-  id: 1,
-  name: "Same Shit Different Day Tee",
-  price: 1499,
-  color: "White",
-  image: teePhotos[0].image,
-  image2: teePhotos[1].image,
-  note: "Single oversized white T-shirt with front chest print, relaxed drop shoulder, ribbed crew neck and clean back.",
-  photos: teePhotos,
-};
-
-const products: Product[] = [mainProduct];
 
 const fade = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-10%" }, transition: { duration: .8, ease: [0.22, 1, 0.36, 1] as const } };
 
@@ -65,10 +41,10 @@ export default function Home() {
     <AnimatePresence mode="wait">
       {view === "home" && <motion.div key="home" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
         <section className="hero">
-          <motion.img style={{scale:heroScale}} src="/images/product/same-shit-front-model.png" alt="P&R Same Shit Different Day oversized tee campaign" />
+          <motion.img style={{scale:heroScale}} src="/images/campaign-hero.png" alt="P&R oversized essentials campaign" />
           <div className="hero-shade"/>
           <motion.div className="hero-copy" style={{opacity:heroOpacity}} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{duration:1.2,delay:.2}}>
-            <p>Edition 001 / 2026</p><h1>Same Shit<br/>Different Day</h1><span>One tee. Four views.</span><button onClick={() => go("collection")}>Shop the tee <ArrowRight size={14}/></button>
+            <p>Edition 001 / 2026</p><h1>Oversized<br/>Essentials</h1><span>Built for everyday.</span><button onClick={() => go("collection")}>Shop the collection <ArrowRight size={14}/></button>
           </motion.div>
           <div className="scroll-note">Scroll to discover <span/></div>
         </section>
@@ -76,28 +52,28 @@ export default function Home() {
         <motion.section className="manifesto" {...fade}><p>OUR POINT OF VIEW</p><h2>Designed to be felt,<br/>not announced.</h2><div><span>We make considered essentials for people who understand that presence doesn’t need permission.</span><button onClick={() => document.querySelector("#about")?.scrollIntoView({behavior:"smooth"})}>Read our story <ArrowRight size={14}/></button></div></motion.section>
 
         <section className="drop">
-          <motion.div className="section-head" {...fade}><div><p>NEW DROP / 001</p><h2>{mainProduct.name}</h2></div><button onClick={() => go("collection")}>View product shots <ArrowRight size={14}/></button></motion.div>
-          <div className="product-grid">{mainProduct.photos.slice(0,3).map((photo,i)=><ProductPhotoCard key={photo.id} photo={photo} i={i} open={()=>openProduct(mainProduct)} add={()=>add(mainProduct)}/>)}</div>
+          <motion.div className="section-head" {...fade}><div><p>NEW DROP / 001</p><h2>Oversized Essentials</h2></div><button onClick={() => go("collection")}>View all pieces <ArrowRight size={14}/></button></motion.div>
+          <div className="product-grid">{products.slice(0,3).map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div>
         </section>
 
         <section className="editorial-grid">
-          <motion.button onClick={() => go("product")} className="editorial large" {...fade}><img src="/images/product/same-shit-back-model.png" alt="Back view of Same Shit Different Day tee"/><span><small>02 / BACK VIEW</small>Clean back. Oversized fall.<ArrowRight/></span></motion.button>
-          <motion.button onClick={() => go("product")} className="editorial" {...fade}><img src="/images/product/same-shit-collar-detail.png" alt="Collar detail of white oversized tee"/><span><small>03 / COLLAR</small>Ribbed neck detail.<ArrowRight/></span></motion.button>
+          <motion.button onClick={() => go("collection")} className="editorial large" {...fade}><img src="/images/bone-editorial.png" alt="Women's oversized collection"/><span><small>02 / WOMEN</small>Quiet form. Strong presence.<ArrowRight/></span></motion.button>
+          <motion.button onClick={() => go("collection")} className="editorial" {...fade}><img src="/images/washed-charcoal.png" alt="Men's oversized collection"/><span><small>01 / MEN</small>The daily uniform.<ArrowRight/></span></motion.button>
         </section>
 
-        <section className="about" id="about"><motion.div {...fade}><p>P&R / THE STANDARD</p><h2>Less noise.<br/><em>More presence.</em></h2></motion.div><motion.div {...fade}><p>P&R was created around a simple belief: the things you wear most should be the things made best.</p><p>Our first study is one oversized T-shirt with a direct everyday statement, shown through the real views that matter: front, back, print and collar.</p><div className="facts"><span>Designed in India</span><span>Oversized fit</span><span>Single drop focus</span></div></motion.div></section>
+        <section className="about" id="about"><motion.div {...fade}><p>P&R / THE STANDARD</p><h2>Less noise.<br/><em>More presence.</em></h2></motion.div><motion.div {...fade}><p>P&R was created around a simple belief: the things you wear most should be the things made best.</p><p>Our first study is the oversized T-shirt—reworked through proportion, weight and restraint. Made for movement. Designed for repetition.</p><div className="facts"><span>Designed in India</span><span>240 GSM cotton</span><span>Unisex proportions</span></div></motion.div></section>
         <Newsletter/>
       </motion.div>}
 
       {view === "collection" && <motion.div key="collection" className="collection-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-        <div className="collection-title"><p>PRODUCT / EDITION 001</p><h1>Same Shit<br/>Different Day</h1><span>One oversized tee, shown from every important angle.</span></div>
-        <div className="filter-row"><span>{mainProduct.photos.length} product photos</span><div><button>Front</button><button>Back</button><button>Print</button><button>Details <ChevronDown size={13}/></button></div></div>
-        <div className="product-grid collection-products">{mainProduct.photos.map((photo,i)=><ProductPhotoCard key={photo.id} photo={photo} i={i} open={()=>openProduct(mainProduct)} add={()=>add(mainProduct)}/>)}</div>
+        <div className="collection-title"><p>COLLECTION / EDITION 001</p><h1>Oversized<br/>Essentials</h1><span>Four studies in proportion, weight and ease.</span></div>
+        <div className="filter-row"><span>{products.length} pieces</span><div><button>All</button><button>Men</button><button>Women</button><button>Filter <ChevronDown size={13}/></button></div></div>
+        <div className="product-grid collection-products">{products.map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div>
       </motion.div>}
 
       {view === "product" && <motion.div key="product" className="product-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
         <button className="back" onClick={() => go("collection")}><ArrowLeft size={15}/> Back to collection</button>
-        <div className="gallery">{selected.photos.map(photo => <figure key={photo.id}><img src={photo.image} alt={photo.alt}/><figcaption>{photo.label}</figcaption></figure>)}</div>
+        <div className="gallery"><img src={selected.image} alt={selected.name}/><img src={selected.image2} alt={`${selected.name} campaign view`}/></div>
         <ProductInfo product={selected} onAdd={() => add()} onBuy={() => { add(); setCartOpen(false); go("checkout"); }}/>
       </motion.div>}
 
@@ -113,7 +89,7 @@ export default function Home() {
   </main>
 }
 
-function ProductPhotoCard({photo,i,open,add}:{photo:ProductPhoto,i:number,open:()=>void,add:()=>void}) { return <motion.article className={`product-card ${i===1?"offset":""}`} {...fade}><button className="product-image" onClick={open}><img src={photo.image} alt={photo.alt}/><span>View tee <ArrowRight size={14}/></span></button><div className="product-meta"><button onClick={open}><b>{photo.label}</b><small>{mainProduct.name}</small></button><span>₹{mainProduct.price.toLocaleString("en-IN")}</span><button className="quick" onClick={add}>Quick add</button></div></motion.article> }
+function ProductCard({p,i,open,add}:{p:Product,i:number,open:(p:Product)=>void,add:(p:Product)=>void}) { return <motion.article className={`product-card ${i===1?"offset":""}`} {...fade}><button className="product-image" onClick={()=>open(p)}><img src={p.image} alt={p.name}/><img className="second" src={p.image2} alt=""/><span>View piece <ArrowRight size={14}/></span></button><div className="product-meta"><button onClick={()=>open(p)}><b>{p.name}</b><small>{p.color}</small></button><span>₹{p.price.toLocaleString("en-IN")}</span><button className="quick" onClick={()=>add(p)}>Quick add</button></div></motion.article> }
 
 function ProductInfo({product,onAdd,onBuy}:{product:Product,onAdd:()=>void,onBuy:()=>void}) { const [size,setSize]=useState("M"); const [open,setOpen]=useState("Details"); return <aside className="product-info"><p>EDITION 001</p><h1>{product.name}</h1><b>₹{product.price.toLocaleString("en-IN")}</b><span className="tax">Inclusive of all taxes</span><p className="description">An oversized study in proportion. Cut from dense combed cotton with dropped shoulders and a structured, easy drape.</p><div className="choice"><label>Colour <span>{product.color}</span></label><div className={`swatch ${product.color.includes("Bone")||product.color.includes("Ecru")?"light":""}`}/></div><div className="choice"><label>Size <button>Size guide</button></label><div className="sizes">{["XS","S","M","L","XL"].map(s=><button className={size===s?"selected":""} onClick={()=>setSize(s)} key={s}>{s}</button>)}</div></div><button className="primary" onClick={onAdd}>Add to bag</button><button className="secondary" onClick={onBuy}>Buy now</button><div className="accordions">{["Details","Shipping & returns","Care guide"].map(x=><div key={x}><button onClick={()=>setOpen(open===x?"":x)}>{x}<Plus size={15}/></button>{open===x&&<motion.p initial={{height:0,opacity:0}} animate={{height:"auto",opacity:1}}>{x==="Details"?product.note:x==="Care guide"?"Cold wash inside out. Do not tumble dry. Iron on reverse.":"Complimentary shipping across India. Easy returns within 7 days."}</motion.p>}</div>)}</div></aside> }
 
