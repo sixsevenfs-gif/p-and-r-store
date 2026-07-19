@@ -124,6 +124,36 @@ export const products: Product[] = [
   },
   {
     "id": 5,
+    "slug": "nothing-to-wear-tee",
+    "name": "Nothing To Wear Tee",
+    "price": 1599,
+    "color": "Sand / Burgundy Print",
+    "note": "Oversized sand T-shirt with a burgundy serif front print, clean back, ribbed neck and relaxed premium drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/nothing-to-wear-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/nothing-to-wear-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/nothing-to-wear-tee/closeup-fabric.png"
+      },
+      {
+        "key": "neck",
+        "label": "Neck",
+        "src": "/products/nothing-to-wear-tee/neck.png"
+      }
+    ]
+  },
+  {
+    "id": 6,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
