@@ -124,6 +124,36 @@ export const products: Product[] = [
   },
   {
     "id": 5,
+    "slug": "my-cardio-tee",
+    "name": "My Cardio Tee",
+    "price": 1599,
+    "color": "White / Burgundy Back Print",
+    "note": "Oversized white T-shirt with a clean plain front, burgundy back graphic, ribbed neck and relaxed premium drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front",
+        "src": "/products/my-cardio-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back Print",
+        "src": "/products/my-cardio-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/my-cardio-tee/closeup-fabric.png"
+      },
+      {
+        "key": "neck",
+        "label": "Neck",
+        "src": "/products/my-cardio-tee/neck.png"
+      }
+    ]
+  },
+  {
+    "id": 6,
     "slug": "nothing-to-wear-tee",
     "name": "Nothing To Wear Tee",
     "price": 1599,
@@ -153,7 +183,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 6,
+    "id": 7,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
