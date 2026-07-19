@@ -4,6 +4,36 @@ export type Product = { id: number; slug: string; name: string; price: number; c
 export const products: Product[] = [
   {
     "id": 1,
+    "slug": "even-at-my-worst-tee",
+    "name": "Even At My Worst Tee",
+    "price": 1599,
+    "color": "White / Red Print",
+    "note": "Oversized white T-shirt with a bold red front graphic, clean back, ribbed neck and premium everyday drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/even-at-my-worst-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/even-at-my-worst-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/even-at-my-worst-tee/closeup-fabric.png"
+      },
+      {
+        "key": "neck",
+        "label": "Neck",
+        "src": "/products/even-at-my-worst-tee/neck.png"
+      }
+    ]
+  },
+  {
+    "id": 2,
     "slug": "hot-wife-tee",
     "name": "Hot Wife Tee",
     "price": 1499,
@@ -33,7 +63,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 2,
+    "id": 3,
     "slug": "i-told-my-mom-tee",
     "name": "I Told My Mom Tee",
     "price": 1599,
@@ -63,7 +93,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 3,
+    "id": 4,
     "slug": "milf-tee",
     "name": "MILF Tee",
     "price": 1599,
@@ -93,7 +123,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 4,
+    "id": 5,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
