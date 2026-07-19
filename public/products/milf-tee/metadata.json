@@ -1,0 +1,12 @@
+{
+  "name": "MILF Tee",
+  "price": 1599,
+  "color": "White / Red Print",
+  "note": "Oversized white T-shirt with a bold red serif front graphic, clean back, ribbed neck and premium everyday drape.",
+  "images": [
+    { "file": "front.png", "label": "Front Print" },
+    { "file": "back.png", "label": "Back" },
+    { "file": "closeup-fabric.png", "label": "Print Detail" },
+    { "file": "neck.png", "label": "Neck" }
+  ]
+}

@@ -64,6 +64,36 @@ export const products: Product[] = [
   },
   {
     "id": 3,
+    "slug": "milf-tee",
+    "name": "MILF Tee",
+    "price": 1599,
+    "color": "White / Red Print",
+    "note": "Oversized white T-shirt with a bold red serif front graphic, clean back, ribbed neck and premium everyday drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/milf-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/milf-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/milf-tee/closeup-fabric.png"
+      },
+      {
+        "key": "neck",
+        "label": "Neck",
+        "src": "/products/milf-tee/neck.png"
+      }
+    ]
+  },
+  {
+    "id": 4,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
