@@ -1,0 +1,12 @@
+{
+  "name": "I Told My Mom Tee",
+  "price": 1599,
+  "color": "Black / Dust Pink Print",
+  "note": "Oversized black T-shirt with a dust-pink back graphic, plain front, ribbed neck and heavy everyday drape.",
+  "images": [
+    { "file": "back-lifestyle.png", "label": "Back Print" },
+    { "file": "front.png", "label": "Front" },
+    { "file": "back.png", "label": "Back Flatlay" },
+    { "file": "neck.png", "label": "Neck" }
+  ]
+}

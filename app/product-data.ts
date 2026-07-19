@@ -34,6 +34,36 @@ export const products: Product[] = [
   },
   {
     "id": 2,
+    "slug": "i-told-my-mom-tee",
+    "name": "I Told My Mom Tee",
+    "price": 1599,
+    "color": "Black / Dust Pink Print",
+    "note": "Oversized black T-shirt with a dust-pink back graphic, plain front, ribbed neck and heavy everyday drape.",
+    "gallery": [
+      {
+        "key": "back-lifestyle",
+        "label": "Back Print",
+        "src": "/products/i-told-my-mom-tee/back-lifestyle.png"
+      },
+      {
+        "key": "front",
+        "label": "Front",
+        "src": "/products/i-told-my-mom-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back Flatlay",
+        "src": "/products/i-told-my-mom-tee/back.png"
+      },
+      {
+        "key": "neck",
+        "label": "Neck",
+        "src": "/products/i-told-my-mom-tee/neck.png"
+      }
+    ]
+  },
+  {
+    "id": 3,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,

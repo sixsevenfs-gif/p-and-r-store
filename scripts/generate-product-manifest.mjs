@@ -52,6 +52,18 @@ function readMetadata(slug) {
   return JSON.parse(readFileSync(metadataPath, "utf8"));
 }
 
+function normalizeMetadataImages(metadata, slug) {
+  if (!Array.isArray(metadata.images)) return null;
+  return metadata.images
+    .map((entry) => typeof entry === "string" ? { file: entry } : entry)
+    .filter((entry) => entry?.file && existsSync(join(productsRoot, slug, entry.file)))
+    .map((entry) => ({
+      key: keyOf(entry.file),
+      label: entry.label ?? labelFor(entry.file),
+      src: `/products/${slug}/${entry.file}`,
+    }));
+}
+
 const directories = existsSync(productsRoot)
   ? readdirSync(productsRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name)
   : [];
@@ -59,6 +71,7 @@ const directories = existsSync(productsRoot)
 const products = directories.map((slug, index) => {
   const productPath = join(productsRoot, slug);
   const metadata = readMetadata(slug);
+  const metadataImages = normalizeMetadataImages(metadata, slug);
   const files = readdirSync(productPath)
     .filter((file) => allowedExtensions.has(extensionOf(file)))
     .sort((a, b) => orderIndex(a) - orderIndex(b) || a.localeCompare(b));
@@ -70,7 +83,7 @@ const products = directories.map((slug, index) => {
     price: metadata.price ?? 1499,
     color: metadata.color ?? "White",
     note: metadata.note ?? "Oversized T-shirt with a premium everyday fit, clean construction and detailed product photography.",
-    gallery: files.map((file) => ({
+    gallery: metadataImages ?? files.map((file) => ({
       key: keyOf(file),
       label: labelFor(file),
       src: `/products/${slug}/${file}`,
