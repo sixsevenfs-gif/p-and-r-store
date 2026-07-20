@@ -16,19 +16,22 @@ export default function Home() {
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [navSolid, setNavSolid] = useState(false);
+  const [collectionFilter, setCollectionFilter] = useState<"All" | "Men" | "Women">("All");
   const { scrollYProgress } = useScroll();
   const heroScale = useTransform(scrollYProgress, [0, .16], [1.08, 1]);
   const heroOpacity = useTransform(scrollYProgress, [0, .13], [1, 0]);
 
   useEffect(() => { const onScroll = () => setNavSolid(window.scrollY > 60 || view !== "home"); onScroll(); addEventListener("scroll", onScroll); return () => removeEventListener("scroll", onScroll); }, [view]);
   const go = (next: typeof view) => { setView(next); setMenuOpen(false); scrollTo({ top: 0, behavior: "smooth" }); };
+  const goCollection = (filter: "All" | "Men" | "Women" = "All") => { setCollectionFilter(filter); go("collection"); };
   const openProduct = (p: Product) => { setSelected(p); go("product"); };
   const add = (p = selected) => { setCart(c => [...c, p]); setCartOpen(true); };
+  const collectionProducts = collectionFilter === "All" ? products : products.filter((product) => product.category === collectionFilter);
 
   return <main>
     <header className={`nav ${navSolid ? "solid" : ""}`}>
       <button className="mobile-menu" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Menu size={20}/></button>
-      <nav className="nav-left"><button onClick={() => go("collection")}>Shop</button><button onClick={() => go("collection")}>Men</button><button onClick={() => go("collection")}>Women</button><button onClick={() => { go("home"); setTimeout(() => document.querySelector("#about")?.scrollIntoView({behavior:"smooth"}), 50); }}>About</button></nav>
+      <nav className="nav-left"><button onClick={() => goCollection("All")}>Shop</button><button onClick={() => goCollection("Men")}>Men</button><button onClick={() => goCollection("Women")}>Women</button><button onClick={() => { go("home"); setTimeout(() => document.querySelector("#about")?.scrollIntoView({behavior:"smooth"}), 50); }}>About</button></nav>
       <button className="wordmark" onClick={() => go("home")} aria-label="P and R home">P<span>&</span>R</button>
       <nav className="nav-right"><button aria-label="Search"><Search size={18}/><span>Search</span></button><button onClick={() => setCartOpen(true)}><ShoppingBag size={18}/><span>Cart ({cart.length})</span></button><button className="account">Account</button></nav>
     </header>
@@ -39,7 +42,7 @@ export default function Home() {
           <motion.img style={{scale:heroScale}} src="/images/campaign-hero.png" alt="P&R oversized essentials campaign" />
           <div className="hero-shade"/>
           <motion.div className="hero-copy" style={{opacity:heroOpacity}} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{duration:1.2,delay:.2}}>
-            <p>Edition 001 / 2026</p><h1>Oversized<br/>Essentials</h1><span>Built for everyday.</span><button onClick={() => go("collection")}>Shop the collection <ArrowRight size={14}/></button>
+            <p>Edition 001 / 2026</p><h1>Oversized<br/>Essentials</h1><span>Built for everyday.</span><button onClick={() => goCollection("All")}>Shop the collection <ArrowRight size={14}/></button>
           </motion.div>
           <div className="scroll-note">Scroll to discover <span/></div>
         </section>
@@ -47,13 +50,13 @@ export default function Home() {
         <motion.section className="manifesto" {...fade}><p>OUR POINT OF VIEW</p><h2>Designed to be felt,<br/>not announced.</h2><div><span>We make considered essentials for people who understand that presence doesn’t need permission.</span><button onClick={() => document.querySelector("#about")?.scrollIntoView({behavior:"smooth"})}>Read our story <ArrowRight size={14}/></button></div></motion.section>
 
         <section className="drop">
-          <motion.div className="section-head" {...fade}><div><p>NEW DROP / 001</p><h2>Oversized Essentials</h2></div><button onClick={() => go("collection")}>View all pieces <ArrowRight size={14}/></button></motion.div>
+          <motion.div className="section-head" {...fade}><div><p>NEW DROP / 001</p><h2>Oversized Essentials</h2></div><button onClick={() => goCollection("All")}>View all pieces <ArrowRight size={14}/></button></motion.div>
           <div className="product-grid">{products.slice(0,3).map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div>
         </section>
 
         <section className="editorial-grid">
-          <motion.button onClick={() => go("collection")} className="editorial large" {...fade}><img src="/images/bone-editorial.png" alt="Women's oversized collection"/><span><small>02 / WOMEN</small>Quiet form. Strong presence.<ArrowRight/></span></motion.button>
-          <motion.button onClick={() => go("collection")} className="editorial" {...fade}><img src="/images/washed-charcoal.png" alt="Men's oversized collection"/><span><small>01 / MEN</small>The daily uniform.<ArrowRight/></span></motion.button>
+          <motion.button onClick={() => goCollection("Women")} className="editorial large" {...fade}><img src="/images/bone-editorial.png" alt="Women's oversized collection"/><span><small>02 / WOMEN</small>Quiet form. Strong presence.<ArrowRight/></span></motion.button>
+          <motion.button onClick={() => goCollection("Men")} className="editorial" {...fade}><img src="/images/washed-charcoal.png" alt="Men's oversized collection"/><span><small>01 / MEN</small>The daily uniform.<ArrowRight/></span></motion.button>
         </section>
 
         <section className="about" id="about"><motion.div {...fade}><p>P&R / THE STANDARD</p><h2>Less noise.<br/><em>More presence.</em></h2></motion.div><motion.div {...fade}><p>P&R was created around a simple belief: the things you wear most should be the things made best.</p><p>Our first study is the oversized T-shirt—reworked through proportion, weight and restraint. Made for movement. Designed for repetition.</p><div className="facts"><span>Designed in India</span><span>240 GSM cotton</span><span>Unisex proportions</span></div></motion.div></section>
@@ -61,9 +64,9 @@ export default function Home() {
       </motion.div>}
 
       {view === "collection" && <motion.div key="collection" className="collection-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-        <div className="collection-title"><p>COLLECTION / EDITION 001</p><h1>Oversized<br/>Essentials</h1><span>Four studies in proportion, weight and ease.</span></div>
-        <div className="filter-row"><span>{products.length} pieces</span><div><button>All</button><button>Men</button><button>Women</button><button>Filter <ChevronDown size={13}/></button></div></div>
-        <div className="product-grid collection-products">{products.map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div>
+        <div className="collection-title"><p>COLLECTION / EDITION 001</p><h1>{collectionFilter === "Women" ? "Women" : collectionFilter === "Men" ? "Men" : "Oversized"}<br/>{collectionFilter === "All" ? "Essentials" : "Essentials"}</h1><span>{collectionFilter === "Women" ? "Women’s crop tees and everyday essentials." : "Four studies in proportion, weight and ease."}</span></div>
+        <div className="filter-row"><span>{collectionProducts.length} pieces</span><div><button className={collectionFilter==="All"?"active":""} onClick={() => setCollectionFilter("All")}>All</button><button className={collectionFilter==="Men"?"active":""} onClick={() => setCollectionFilter("Men")}>Men</button><button className={collectionFilter==="Women"?"active":""} onClick={() => setCollectionFilter("Women")}>Women</button><button>Filter <ChevronDown size={13}/></button></div></div>
+        <div className="product-grid collection-products">{collectionProducts.map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div>
       </motion.div>}
 
       {view === "product" && <motion.div key="product" className="product-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
@@ -80,7 +83,7 @@ export default function Home() {
 
     <Footer go={go}/>
     <AnimatePresence>{cartOpen && <Cart cart={cart} close={()=>setCartOpen(false)} remove={(i)=>setCart(c=>c.filter((_,x)=>x!==i))} checkout={()=>{setCartOpen(false);go("checkout")}}/>}</AnimatePresence>
-    <AnimatePresence>{menuOpen && <motion.div className="menu" initial={{x:"-100%"}} animate={{x:0}} exit={{x:"-100%"}} transition={{ease:[.22,1,.36,1],duration:.55}}><button onClick={()=>setMenuOpen(false)}><X/></button><nav><button onClick={()=>go("collection")}>Shop</button><button onClick={()=>go("collection")}>Men</button><button onClick={()=>go("collection")}>Women</button><button onClick={()=>go("home")}>Campaign</button></nav><p>Less Noise. More Presence.</p></motion.div>}</AnimatePresence>
+    <AnimatePresence>{menuOpen && <motion.div className="menu" initial={{x:"-100%"}} animate={{x:0}} exit={{x:"-100%"}} transition={{ease:[.22,1,.36,1],duration:.55}}><button onClick={()=>setMenuOpen(false)}><X/></button><nav><button onClick={()=>goCollection("All")}>Shop</button><button onClick={()=>goCollection("Men")}>Men</button><button onClick={()=>goCollection("Women")}>Women</button><button onClick={()=>go("home")}>Campaign</button></nav><p>Less Noise. More Presence.</p></motion.div>}</AnimatePresence>
   </main>
 }
 

@@ -1,13 +1,46 @@
 export type ProductImage = { key: string; label: string; src: string };
-export type Product = { id: number; slug: string; name: string; price: number; color: string; note: string; gallery: ProductImage[] };
+export type ProductCategory = "Men" | "Women";
+export type Product = { id: number; slug: string; name: string; price: number; color: string; category: ProductCategory; note: string; gallery: ProductImage[] };
 
 export const products: Product[] = [
   {
     "id": 1,
+    "slug": "dump-him-crop-tee",
+    "name": "Dump Him Crop Tee",
+    "price": 1299,
+    "color": "Black / White Print",
+    "category": "Women",
+    "note": "Women's black cropped T-shirt with a minimal white chest print, clean back, ribbed neck and fitted everyday drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/dump-him-crop-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/dump-him-crop-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/dump-him-crop-tee/closeup-fabric.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/dump-him-crop-tee/flatlay.png"
+      }
+    ]
+  },
+  {
+    "id": 2,
     "slug": "even-at-my-worst-tee",
     "name": "Even At My Worst Tee",
     "price": 1599,
     "color": "White / Red Print",
+    "category": "Men",
     "note": "Oversized white T-shirt with a bold red front graphic, clean back, ribbed neck and premium everyday drape.",
     "gallery": [
       {
@@ -33,11 +66,12 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 2,
+    "id": 3,
     "slug": "hot-wife-tee",
     "name": "Hot Wife Tee",
     "price": 1499,
     "color": "White / Burgundy Print",
+    "category": "Men",
     "note": "Oversized white T-shirt with a burgundy serif chest print, clean back, ribbed neck and relaxed drop shoulder.",
     "gallery": [
       {
@@ -63,11 +97,12 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 3,
+    "id": 4,
     "slug": "i-hate-explaining-tee",
     "name": "I Hate Explaining Tee",
     "price": 1599,
     "color": "White / Black Print",
+    "category": "Men",
     "note": "Oversized white T-shirt with a bold black chest print, clean back, ribbed neck and relaxed premium drape.",
     "gallery": [
       {
@@ -93,11 +128,12 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 4,
+    "id": 5,
     "slug": "i-told-my-mom-tee",
     "name": "I Told My Mom Tee",
     "price": 1599,
     "color": "Black / Dust Pink Print",
+    "category": "Men",
     "note": "Oversized black T-shirt with a dust-pink back graphic, plain front, ribbed neck and heavy everyday drape.",
     "gallery": [
       {
@@ -123,11 +159,12 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 5,
+    "id": 6,
     "slug": "milf-tee",
     "name": "MILF Tee",
     "price": 1599,
     "color": "White / Red Print",
+    "category": "Men",
     "note": "Oversized white T-shirt with a bold red serif front graphic, clean back, ribbed neck and premium everyday drape.",
     "gallery": [
       {
@@ -153,11 +190,12 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 6,
+    "id": 7,
     "slug": "my-cardio-tee",
     "name": "My Cardio Tee",
     "price": 1599,
     "color": "White / Burgundy Back Print",
+    "category": "Men",
     "note": "Oversized white T-shirt with a clean plain front, burgundy back graphic, ribbed neck and relaxed premium drape.",
     "gallery": [
       {
@@ -183,11 +221,12 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 7,
+    "id": 8,
     "slug": "my-heart-says-yes-tee",
     "name": "My Heart Says Yes Tee",
     "price": 1599,
     "color": "Ecru / Burgundy Print",
+    "category": "Men",
     "note": "Oversized ecru T-shirt with a burgundy serif chest print, clean back, ribbed neck and relaxed premium drape.",
     "gallery": [
       {
@@ -213,11 +252,12 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 8,
+    "id": 9,
     "slug": "nothing-to-wear-tee",
     "name": "Nothing To Wear Tee",
     "price": 1599,
     "color": "Sand / Burgundy Print",
+    "category": "Men",
     "note": "Oversized sand T-shirt with a burgundy serif front print, clean back, ribbed neck and relaxed premium drape.",
     "gallery": [
       {
@@ -243,11 +283,12 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 9,
+    "id": 10,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
     "color": "White",
+    "category": "Men",
     "note": "Oversized white T-shirt with a front statement print, clean back, ribbed neck and relaxed drop shoulder.",
     "gallery": [
       {

@@ -82,6 +82,7 @@ const products = directories.map((slug, index) => {
     name: metadata.name ?? titleFromSlug(slug),
     price: metadata.price ?? 1499,
     color: metadata.color ?? "White",
+    category: metadata.category ?? "Men",
     note: metadata.note ?? "Oversized T-shirt with a premium everyday fit, clean construction and detailed product photography.",
     gallery: metadataImages ?? files.map((file) => ({
       key: keyOf(file),
@@ -98,6 +99,7 @@ const fallbackProducts = [
     name: "Heavyweight Tee 01",
     price: 1499,
     color: "Washed Charcoal",
+    category: "Men",
     note: "240 GSM / Relaxed structure",
     gallery: [
       { key: "front", label: "Front", src: "/images/washed-charcoal.png" },
@@ -107,7 +109,8 @@ const fallbackProducts = [
 ];
 
 const source = `export type ProductImage = { key: string; label: string; src: string };
-export type Product = { id: number; slug: string; name: string; price: number; color: string; note: string; gallery: ProductImage[] };
+export type ProductCategory = "Men" | "Women";
+export type Product = { id: number; slug: string; name: string; price: number; color: string; category: ProductCategory; note: string; gallery: ProductImage[] };
 
 export const products: Product[] = ${JSON.stringify(products.length ? products : fallbackProducts, null, 2)};
 `;

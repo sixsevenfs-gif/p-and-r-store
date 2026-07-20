@@ -12,4 +12,5 @@
 .collection-page .collection-products .product-card,.collection-page .collection-products .product-card.offset,.collection-page .collection-products .product-card:nth-child(even){margin-top:0}
 .collection-page .collection-products .product-image{aspect-ratio:4/5}
 .collection-page .collection-products .product-image img{object-fit:cover;object-position:center top}
+.collection-page .filter-row button.active{border-bottom:1px solid #111;padding-bottom:4px}
 @media(max-width:760px){.collection-page .collection-title{padding:72px 18px 42px}.collection-page .collection-title h1{font-size:46px;line-height:.9;margin:20px 0}.collection-page .filter-row{height:48px}.collection-page .collection-products{padding:18px 8px 90px}.collection-page .collection-products .product-card,.collection-page .collection-products .product-card.offset,.collection-page .collection-products .product-card:nth-child(even){margin-top:0}.collection-page .collection-products .product-image{aspect-ratio:4/5}}
