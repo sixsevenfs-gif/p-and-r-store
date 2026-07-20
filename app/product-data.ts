@@ -154,6 +154,36 @@ export const products: Product[] = [
   },
   {
     "id": 6,
+    "slug": "my-heart-says-yes-tee",
+    "name": "My Heart Says Yes Tee",
+    "price": 1599,
+    "color": "Ecru / Burgundy Print",
+    "note": "Oversized ecru T-shirt with a burgundy serif chest print, clean back, ribbed neck and relaxed premium drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/my-heart-says-yes-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/my-heart-says-yes-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/my-heart-says-yes-tee/closeup-fabric.png"
+      },
+      {
+        "key": "neck",
+        "label": "Neck",
+        "src": "/products/my-heart-says-yes-tee/neck.png"
+      }
+    ]
+  },
+  {
+    "id": 7,
     "slug": "nothing-to-wear-tee",
     "name": "Nothing To Wear Tee",
     "price": 1599,
@@ -183,7 +213,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 7,
+    "id": 8,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
