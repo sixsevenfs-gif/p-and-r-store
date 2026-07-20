@@ -64,6 +64,36 @@ export const products: Product[] = [
   },
   {
     "id": 3,
+    "slug": "i-hate-explaining-tee",
+    "name": "I Hate Explaining Tee",
+    "price": 1599,
+    "color": "White / Black Print",
+    "note": "Oversized white T-shirt with a bold black chest print, clean back, ribbed neck and relaxed premium drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/i-hate-explaining-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/i-hate-explaining-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/i-hate-explaining-tee/closeup-fabric.png"
+      },
+      {
+        "key": "neck",
+        "label": "Neck",
+        "src": "/products/i-hate-explaining-tee/neck.png"
+      }
+    ]
+  },
+  {
+    "id": 4,
     "slug": "i-told-my-mom-tee",
     "name": "I Told My Mom Tee",
     "price": 1599,
@@ -93,7 +123,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 4,
+    "id": 5,
     "slug": "milf-tee",
     "name": "MILF Tee",
     "price": 1599,
@@ -123,7 +153,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 5,
+    "id": 6,
     "slug": "my-cardio-tee",
     "name": "My Cardio Tee",
     "price": 1599,
@@ -153,7 +183,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 6,
+    "id": 7,
     "slug": "my-heart-says-yes-tee",
     "name": "My Heart Says Yes Tee",
     "price": 1599,
@@ -183,7 +213,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 7,
+    "id": 8,
     "slug": "nothing-to-wear-tee",
     "name": "Nothing To Wear Tee",
     "price": 1599,
@@ -213,7 +243,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 8,
+    "id": 9,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,

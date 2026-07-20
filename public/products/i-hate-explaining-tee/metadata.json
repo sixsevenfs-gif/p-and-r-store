@@ -1,0 +1,12 @@
+{
+  "name": "I Hate Explaining Tee",
+  "price": 1599,
+  "color": "White / Black Print",
+  "note": "Oversized white T-shirt with a bold black chest print, clean back, ribbed neck and relaxed premium drape.",
+  "images": [
+    { "file": "front.png", "label": "Front Print" },
+    { "file": "back.png", "label": "Back" },
+    { "file": "closeup-fabric.png", "label": "Print Detail" },
+    { "file": "neck.png", "label": "Neck" }
+  ]
+}
