@@ -188,6 +188,7 @@ function CartPage({cart,add,updateQuantity,openProduct,shop,checkout}:{cart:Prod
 function ProductGallery({product}:{product:Product}) {
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [lightboxSeen, setLightboxSeen] = useState(0);
   const [zoomed, setZoomed] = useState(false);
   const lastTap = useRef(0);
   const images = product.gallery;
@@ -195,11 +196,9 @@ function ProductGallery({product}:{product:Product}) {
   useEffect(() => {
     const observers = images.map((_, index) => {
       const el = document.getElementById(`product-shot-${product.id}-${index}`);
-      const mobileEl = document.getElementById(`product-mobile-shot-${product.id}-${index}`);
-      if (!el && !mobileEl) return null;
+      if (!el) return null;
       const observer = new IntersectionObserver(([entry]) => entry.isIntersecting && setActive(index), { threshold: .55 });
-      if (el) observer.observe(el);
-      if (mobileEl) observer.observe(mobileEl);
+      observer.observe(el);
       return observer;
     });
     return () => observers.forEach((observer) => observer?.disconnect());
@@ -207,17 +206,30 @@ function ProductGallery({product}:{product:Product}) {
 
   useEffect(() => {
     if (lightbox === null) return;
+    requestAnimationFrame(() => document.getElementById(`lightbox-shot-${product.id}-${lightbox}`)?.scrollIntoView({ block: "start" }));
+    const observers = images.map((_, index) => {
+      const el = document.getElementById(`lightbox-shot-${product.id}-${index}`);
+      if (!el) return null;
+      const observer = new IntersectionObserver(([entry]) => entry.isIntersecting && setLightboxSeen(index), { threshold: .58 });
+      observer.observe(el);
+      return observer;
+    });
+    return () => observers.forEach((observer) => observer?.disconnect());
+  }, [images, lightbox, product.id]);
+
+  useEffect(() => {
+    if (lightbox === null) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setLightbox(null);
-      if (event.key === "ArrowRight") setLightbox((value) => value === null ? value : (value + 1) % images.length);
-      if (event.key === "ArrowLeft") setLightbox((value) => value === null ? value : (value - 1 + images.length) % images.length);
+      if (event.key === "ArrowRight") setLightbox((value) => { if (value === null) return value; const next = (value + 1) % images.length; setLightboxSeen(next); return next; });
+      if (event.key === "ArrowLeft") setLightbox((value) => { if (value === null) return value; const next = (value - 1 + images.length) % images.length; setLightboxSeen(next); return next; });
     };
     addEventListener("keydown", onKey);
     return () => removeEventListener("keydown", onKey);
   }, [images.length, lightbox]);
 
-  const openAt = (index: number) => { setLightbox(index); setZoomed(false); };
-  const changeLightbox = (step: number) => setLightbox((value) => value === null ? value : (value + step + images.length) % images.length);
+  const openAt = (index: number) => { setLightbox(index); setLightboxSeen(index); setZoomed(false); };
+  const changeLightbox = (step: number) => setLightbox((value) => { if (value === null) return value; const next = (value + step + images.length) % images.length; setLightboxSeen(next); return next; });
   const handleLightboxTap = () => {
     const now = Date.now();
     if (now - lastTap.current < 280) setZoomed((value) => !value);
@@ -232,19 +244,22 @@ function ProductGallery({product}:{product:Product}) {
       {images.map((image, index) => <motion.button id={`product-shot-${product.id}-${index}`} className="gallery-frame" key={image.key} onClick={() => openAt(index)} initial={{opacity:0, y:22}} whileInView={{opacity:1, y:0}} viewport={{once:true, margin:"-15%"}} transition={{duration:.7, ease:[.22,1,.36,1]}}><Image src={image.src} alt={`${product.name} ${image.label}`} fill sizes="(max-width: 1100px) 65vw, 55vw" placeholder="blur" blurDataURL={blurDataURL}/><span>{image.label}</span></motion.button>)}
     </div>
     <div className="mobile-gallery">
-      <div className="mobile-track">
-        {images.map((image, index) => <motion.button id={`product-mobile-shot-${product.id}-${index}`} className="mobile-slide" key={image.key} onClick={() => openAt(index)} initial={{opacity:0}} whileInView={{opacity:1}} viewport={{once:true, margin:"-20%"}} transition={{duration:.45, ease:[.22,1,.36,1]}}><Image src={image.src} alt={`${product.name} ${image.label}`} fill sizes="100vw" placeholder="blur" blurDataURL={blurDataURL}/></motion.button>)}
-      </div>
+      <motion.div className="mobile-track" drag="x" dragConstraints={{left:0,right:0}} onDragEnd={(_, info) => { if (info.offset.x < -55) setActive((active + 1) % images.length); if (info.offset.x > 55) setActive((active - 1 + images.length) % images.length); }} animate={{x:`-${active * 100}%`}} transition={{duration:.35, ease:[.22,1,.36,1]}}>
+        {images.map((image, index) => <button className="mobile-slide" key={image.key} onClick={() => openAt(index)}><Image src={image.src} alt={`${product.name} ${image.label}`} fill sizes="100vw" placeholder="blur" blurDataURL={blurDataURL}/></button>)}
+      </motion.div>
       <div className="mobile-count">{active + 1} / {images.length}</div>
     </div>
     <AnimatePresence>{lightbox !== null && <motion.div className="lightbox" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
       <button className="lightbox-close" onClick={() => setLightbox(null)} aria-label="Close gallery"><X size={21}/></button>
       <button className="lightbox-arrow left" onClick={() => changeLightbox(-1)} aria-label="Previous image"><ChevronLeft size={24}/></button>
+      <div className="lightbox-scroll-gallery">
+        {images.map((image, index) => <button id={`lightbox-shot-${product.id}-${index}`} className="lightbox-scroll-frame" key={image.key} onClick={handleLightboxTap}><Image src={image.src} alt={`${product.name} ${image.label}`} fill sizes="100vw" priority={index === lightbox} placeholder="blur" blurDataURL={blurDataURL}/></button>)}
+      </div>
       <motion.button className={`lightbox-image ${zoomed ? "zoomed" : ""}`} onClick={handleLightboxTap}>
         <Image src={images[lightbox].src} alt={`${product.name} ${images[lightbox].label}`} fill sizes="100vw" priority placeholder="blur" blurDataURL={blurDataURL}/>
       </motion.button>
       <button className="lightbox-arrow right" onClick={() => changeLightbox(1)} aria-label="Next image"><ChevronRight size={24}/></button>
-      <div className="lightbox-count">{lightbox + 1} / {images.length}</div>
+      <div className="lightbox-count">{lightboxSeen + 1} / {images.length}</div>
     </motion.div>}</AnimatePresence>
   </div>
 }
