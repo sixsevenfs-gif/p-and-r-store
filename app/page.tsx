@@ -8,6 +8,14 @@ import { products, type Product } from "./product-data";
 
 const blurDataURL = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNDAwJyBoZWlnaHQ9JzUwMCcgdmlld0JveD0nMCAwIDQwMCA1MDAnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zyc+PHJlY3Qgd2lkdGg9JzQwMCcgaGVpZ2h0PSc1MDAnIGZpbGw9JyNmM2YzZjAnLz48L3N2Zz4=";
 const fade = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-10%" }, transition: { duration: .8, ease: [0.22, 1, 0.36, 1] as const } };
+const featuredDropProducts = [
+  "allergic-to-people-tee",
+  "i-hate-explaining-tee",
+  "apologies-in-cash-tee",
+].flatMap((slug) => {
+  const product = products.find((item) => item.slug === slug);
+  return product ? [product] : [];
+});
 
 export default function Home() {
   const [view, setView] = useState<"home" | "collection" | "product" | "checkout">("home");
@@ -50,8 +58,8 @@ export default function Home() {
         <motion.section className="manifesto" {...fade}><p>OUR POINT OF VIEW</p><h2>Designed to be felt,<br/>not announced.</h2><div><span>We make considered essentials for people who understand that presence doesn’t need permission.</span><button onClick={() => document.querySelector("#about")?.scrollIntoView({behavior:"smooth"})}>Read our story <ArrowRight size={14}/></button></div></motion.section>
 
         <section className="drop">
-          <motion.div className="section-head" {...fade}><div><p>NEW DROP / 001</p><h2>Oversized Essentials</h2></div><button onClick={() => goCollection("All")}>View all pieces <ArrowRight size={14}/></button></motion.div>
-          <div className="product-grid">{products.slice(0,3).map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div>
+          <motion.div className="section-head" {...fade}><div><p>NEW DROP / 001</p><h2>Oversized Essentials</h2><span className="section-note">Girls and boys. One everyday uniform.</span></div><button onClick={() => goCollection("All")}>View all pieces <ArrowRight size={14}/></button></motion.div>
+          <div className="product-grid featured-products">{featuredDropProducts.map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div>
         </section>
 
         <section className="editorial-grid">
@@ -87,10 +95,10 @@ export default function Home() {
   </main>
 }
 
-function ProductCard({p,i,open,add}:{p:Product,i:number,open:(p:Product)=>void,add:(p:Product)=>void}) {
+function ProductCard({p,open,add}:{p:Product,i:number,open:(p:Product)=>void,add:(p:Product)=>void}) {
   const first = p.gallery[0];
   const second = p.gallery[1] ?? p.gallery[0];
-  return <motion.article className={`product-card ${i===1?"offset":""}`} {...fade}><button className="product-image" onClick={()=>open(p)}><Image src={first.src} alt={`${p.name} ${first.label}`} fill sizes="(max-width: 760px) 50vw, 33vw" placeholder="blur" blurDataURL={blurDataURL}/><Image className="second" src={second.src} alt="" fill sizes="(max-width: 760px) 50vw, 33vw" placeholder="blur" blurDataURL={blurDataURL}/><span>View piece <ArrowRight size={14}/></span></button><div className="product-meta"><button onClick={()=>open(p)}><b>{p.name}</b><small>{p.color}</small></button><span>₹{p.price.toLocaleString("en-IN")}</span><button className="quick" onClick={()=>add(p)}>Quick add</button></div></motion.article>
+  return <motion.article className="product-card" {...fade}><button className="product-image" onClick={()=>open(p)}><Image src={first.src} alt={`${p.name} ${first.label}`} fill sizes="(max-width: 760px) 50vw, 33vw" placeholder="blur" blurDataURL={blurDataURL}/><Image className="second" src={second.src} alt="" fill sizes="(max-width: 760px) 50vw, 33vw" placeholder="blur" blurDataURL={blurDataURL}/><span>View piece <ArrowRight size={14}/></span></button><div className="product-meta"><button onClick={()=>open(p)}><b>{p.name}</b><small>{p.color}</small></button><span>₹{p.price.toLocaleString("en-IN")}</span><button className="quick" onClick={()=>add(p)}>Quick add</button></div></motion.article>
 }
 
 function ProductGallery({product}:{product:Product}) {

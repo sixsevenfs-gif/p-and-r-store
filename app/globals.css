@@ -14,3 +14,12 @@
 .collection-page .collection-products .product-image img{object-fit:cover;object-position:center top}
 .collection-page .filter-row button.active{border-bottom:1px solid #111;padding-bottom:4px}
 @media(max-width:760px){.collection-page .collection-title{padding:72px 18px 42px}.collection-page .collection-title h1{font-size:46px;line-height:.9;margin:20px 0}.collection-page .filter-row{height:48px}.collection-page .collection-products{padding:18px 8px 90px}.collection-page .collection-products .product-card,.collection-page .collection-products .product-card.offset,.collection-page .collection-products .product-card:nth-child(even){margin-top:0}.collection-page .collection-products .product-image{aspect-ratio:4/5}}
+.drop .section-head{margin-bottom:42px}
+.section-note{display:block;margin-top:12px;color:#555;font-family:Georgia,serif;font-size:15px;line-height:1.5}
+.featured-products{align-items:start}
+.featured-products .product-card{margin-top:0!important;background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:7px;overflow:hidden}
+.featured-products .product-image{aspect-ratio:4/5;background:#f5f4f1}
+.featured-products .product-image img{object-fit:cover;object-position:center top}
+.featured-products .product-meta{padding:16px 16px 18px;border-top:1px solid rgba(0,0,0,.06)}
+.featured-products .product-meta .quick{right:16px;top:48px}
+@media(max-width:760px){.drop .section-head{margin-bottom:26px}.section-note{font-size:13px}.featured-products{gap:10px}.featured-products .product-meta{padding:12px 10px 14px}}
