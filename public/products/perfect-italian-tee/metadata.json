@@ -1,0 +1,13 @@
+{
+  "name": "Perfect Italian Tee",
+  "price": 1499,
+  "color": "White / Black Print",
+  "category": "Women",
+  "note": "Women's white oversized T-shirt with a black serif chest print, relaxed everyday fit, clean back and soft ribbed neckline.",
+  "images": [
+    { "file": "front.png", "label": "Front Print" },
+    { "file": "back.png", "label": "Back" },
+    { "file": "closeup-fabric.png", "label": "Print Detail" },
+    { "file": "flatlay.png", "label": "Flatlay" }
+  ]
+}

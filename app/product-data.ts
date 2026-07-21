@@ -439,6 +439,37 @@ export const products: Product[] = [
   },
   {
     "id": 15,
+    "slug": "perfect-italian-tee",
+    "name": "Perfect Italian Tee",
+    "price": 1499,
+    "color": "White / Black Print",
+    "category": "Women",
+    "note": "Women's white oversized T-shirt with a black serif chest print, relaxed everyday fit, clean back and soft ribbed neckline.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/perfect-italian-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/perfect-italian-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/perfect-italian-tee/closeup-fabric.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/perfect-italian-tee/flatlay.png"
+      }
+    ]
+  },
+  {
+    "id": 16,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
