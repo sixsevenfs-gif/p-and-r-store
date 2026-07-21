@@ -1,0 +1,25 @@
+{
+  "name": "Music Remembered Tee",
+  "price": 1499,
+  "color": "White / Black Back Print",
+  "category": "Women",
+  "note": "Women's white oversized T-shirt with a plain front, handwritten black back print, soft ribbed neck and relaxed everyday drape.",
+  "images": [
+    {
+      "file": "front.png",
+      "label": "Front"
+    },
+    {
+      "file": "back.png",
+      "label": "Back Print"
+    },
+    {
+      "file": "neck.png",
+      "label": "Neck"
+    },
+    {
+      "file": "flatlay.png",
+      "label": "Flatlay"
+    }
+  ]
+}

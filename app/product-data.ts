@@ -346,6 +346,37 @@ export const products: Product[] = [
   },
   {
     "id": 12,
+    "slug": "music-remembered-tee",
+    "name": "Music Remembered Tee",
+    "price": 1499,
+    "color": "White / Black Back Print",
+    "category": "Women",
+    "note": "Women's white oversized T-shirt with a plain front, handwritten black back print, soft ribbed neck and relaxed everyday drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front",
+        "src": "/products/music-remembered-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back Print",
+        "src": "/products/music-remembered-tee/back.png"
+      },
+      {
+        "key": "neck",
+        "label": "Neck",
+        "src": "/products/music-remembered-tee/neck.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/music-remembered-tee/flatlay.png"
+      }
+    ]
+  },
+  {
+    "id": 13,
     "slug": "my-cardio-tee",
     "name": "My Cardio Tee",
     "price": 1599,
@@ -376,7 +407,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 13,
+    "id": 14,
     "slug": "my-heart-says-yes-tee",
     "name": "My Heart Says Yes Tee",
     "price": 1599,
@@ -407,7 +438,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 14,
+    "id": 15,
     "slug": "nothing-to-wear-tee",
     "name": "Nothing To Wear Tee",
     "price": 1599,
@@ -438,7 +469,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 15,
+    "id": 16,
     "slug": "perfect-italian-tee",
     "name": "Perfect Italian Tee",
     "price": 1499,
@@ -469,7 +500,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 16,
+    "id": 17,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
