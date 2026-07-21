@@ -160,6 +160,37 @@ export const products: Product[] = [
   },
   {
     "id": 6,
+    "slug": "master-of-sarcasm-crop-tee",
+    "name": "Master of Sarcasm Crop Tee",
+    "price": 1299,
+    "color": "White / Black Print",
+    "category": "Women",
+    "note": "Women's white cropped T-shirt with a bold black chest print, clean back, ribbed neck and relaxed everyday drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/master-of-sarcasm-crop-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/master-of-sarcasm-crop-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/master-of-sarcasm-crop-tee/closeup-fabric.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/master-of-sarcasm-crop-tee/flatlay.png"
+      }
+    ]
+  },
+  {
+    "id": 7,
     "slug": "milf-tee",
     "name": "MILF Tee",
     "price": 1599,
@@ -190,7 +221,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 7,
+    "id": 8,
     "slug": "my-cardio-tee",
     "name": "My Cardio Tee",
     "price": 1599,
@@ -221,7 +252,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 8,
+    "id": 9,
     "slug": "my-heart-says-yes-tee",
     "name": "My Heart Says Yes Tee",
     "price": 1599,
@@ -252,7 +283,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 9,
+    "id": 10,
     "slug": "nothing-to-wear-tee",
     "name": "Nothing To Wear Tee",
     "price": 1599,
@@ -283,7 +314,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 10,
+    "id": 11,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,

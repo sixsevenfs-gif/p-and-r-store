@@ -1,0 +1,13 @@
+{
+  "name": "Master of Sarcasm Crop Tee",
+  "price": 1299,
+  "color": "White / Black Print",
+  "category": "Women",
+  "note": "Women's white cropped T-shirt with a bold black chest print, clean back, ribbed neck and relaxed everyday drape.",
+  "images": [
+    { "file": "front.png", "label": "Front Print" },
+    { "file": "back.png", "label": "Back" },
+    { "file": "closeup-fabric.png", "label": "Print Detail" },
+    { "file": "flatlay.png", "label": "Flatlay" }
+  ]
+}
