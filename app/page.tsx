@@ -31,7 +31,7 @@ export default function Home() {
   const heroOpacity = useTransform(scrollYProgress, [0, .13], [1, 0]);
 
   useEffect(() => { const onScroll = () => setNavSolid(window.scrollY > 60 || view !== "home"); onScroll(); addEventListener("scroll", onScroll); return () => removeEventListener("scroll", onScroll); }, [view]);
-  const go = (next: View) => { setView(next); setMenuOpen(false); setCartOpen(false); scrollTo({ top: 0, behavior: "smooth" }); };
+  const go = (next: View) => { setView(next); setMenuOpen(false); setCartOpen(false); requestAnimationFrame(() => scrollTo({ top: 0, behavior: next === "cart" ? "auto" : "smooth" })); };
   const goCollection = (filter: "All" | "Men" | "Women" = "All") => { setCollectionFilter(filter); go("collection"); };
   const openProduct = (p: Product) => { setSelected(p); go("product"); };
   const add = (p = selected) => { setCart(c => [...c, p]); go("cart"); };
@@ -111,6 +111,7 @@ function ProductCard({p,open,add}:{p:Product,i:number,open:(p:Product)=>void,add
 
 function CartPage({cart,add,updateQuantity,openProduct,shop,checkout}:{cart:Product[],add:(p:Product)=>void,updateQuantity:(p:Product,quantity:number)=>void,openProduct:(p:Product)=>void,shop:(filter?:"All"|"Men"|"Women")=>void,checkout:()=>void}) {
   const [sizes, setSizes] = useState<Record<string, string>>({});
+  const [codesOpen, setCodesOpen] = useState(false);
   const items = products.flatMap((product) => {
     const quantity = cart.filter((item) => item.slug === product.slug).length;
     return quantity ? [{ product, quantity }] : [];
@@ -121,19 +122,21 @@ function CartPage({cart,add,updateQuantity,openProduct,shop,checkout}:{cart:Prod
   const shipping = subtotal === 0 || away === 0 ? 0 : 99;
   const discount = 0;
   const tax = Math.round(subtotal * 0.05);
-  const total = subtotal + shipping - discount;
+  const total = subtotal + shipping + tax - discount;
   const progress = Math.min(100, Math.round((subtotal / freeShippingAt) * 100));
   const recommended = products.filter((product) => !items.some((item) => item.product.slug === product.slug)).slice(0, 8);
 
-  if (!cart.length) return <motion.section className="cart-page empty-cart-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+  if (!cart.length) return <motion.section className="cart-page empty-cart-page" initial={{opacity:0,filter:"blur(10px)",y:18}} animate={{opacity:1,filter:"blur(0px)",y:0}} exit={{opacity:0,filter:"blur(10px)",y:-12}} transition={{duration:.55,ease:[.22,1,.36,1]}}>
     <div className="empty-cart-visual"><img src="/images/campaign-hero.png" alt="P&R campaign"/><div><ShoppingBag size={42}/><span>P&R / BAG</span></div></div>
-    <div className="empty-cart-copy"><p>SHOPPING BAG</p><h1>Your bag is empty.</h1><span>Looks like you haven't added anything yet.</span><div><button className="primary" onClick={() => shop("All")}>Continue Shopping</button><button className="secondary" onClick={() => shop("Women")}>Trending Collection</button></div></div>
+    <div className="empty-cart-copy"><p>SHOPPING BAG</p><h1>Your bag is empty.</h1><span>Looks like you haven't added anything yet. Start with the pieces everyone keeps coming back to.</span><div><button className="primary" onClick={() => shop("All")}>Continue Shopping</button><button className="secondary" onClick={() => shop("Women")}>Trending Collection</button></div><div className="empty-picks">{recommended.slice(0,3).map((product) => <button key={product.slug} onClick={() => openProduct(product)}>{product.name}<span>₹{product.price.toLocaleString("en-IN")}</span></button>)}</div></div>
   </motion.section>;
 
-  return <motion.section className="cart-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-    <div className="cart-hero"><p>SHOPPING BAG</p><h1>Review your pieces.</h1><span>{items.length} {items.length === 1 ? "piece" : "pieces"} selected for checkout.</span></div>
+  return <>
+  <motion.section className="cart-page" initial={{opacity:0,filter:"blur(10px)",y:24}} animate={{opacity:1,filter:"blur(0px)",y:0}} exit={{opacity:0,filter:"blur(8px)",y:-16}} transition={{duration:.58,ease:[.22,1,.36,1]}}>
+    <div className="cart-hero"><div><p>SHOPPING BAG</p><h1>Review your pieces.</h1></div><span>{items.length} {items.length === 1 ? "piece" : "pieces"} selected · Secure checkout ready</span></div>
     <div className="cart-layout">
       <div className="bag-column">
+        <div className="bag-column-head"><span>Item</span><span>Details</span><span>Total</span></div>
         <AnimatePresence initial={false}>
           {items.map(({product, quantity}, index) => <motion.article className="bag-card" key={product.slug} initial={{opacity:0,y:24,scale:.98}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,scale:.96}} transition={{duration:.42,delay:index*.04,ease:[.22,1,.36,1]}}>
             <button className="bag-image" onClick={() => openProduct(product)}><Image src={product.gallery[0].src} alt={product.name} fill sizes="(max-width: 760px) 34vw, 22vw" placeholder="blur" blurDataURL={blurDataURL}/></button>
@@ -143,6 +146,7 @@ function CartPage({cart,add,updateQuantity,openProduct,shop,checkout}:{cart:Prod
               <p>{product.note}</p>
               <div className="bag-options">
                 <label>Color <span>{product.color}</span></label>
+                <label>Stock <span>In stock</span></label>
                 <label>Size <select value={sizes[product.slug] ?? "M"} onChange={(event) => setSizes((current) => ({...current, [product.slug]: event.target.value}))}>{["XS","S","M","L","XL"].map((size) => <option key={size}>{size}</option>)}</select></label>
               </div>
               <div className="bag-actions">
@@ -157,23 +161,28 @@ function CartPage({cart,add,updateQuantity,openProduct,shop,checkout}:{cart:Prod
       </div>
       <aside className="summary-card">
         <p>ORDER SUMMARY</p>
-        <div className="summary-row"><span>Subtotal</span><b>₹{subtotal.toLocaleString("en-IN")}</b></div>
-        <div className="summary-row"><span>Shipping</span><b>{shipping ? `₹${shipping}` : "Free"}</b></div>
-        <div className="summary-row"><span>Discount</span><b>₹{discount}</b></div>
-        <div className="summary-row"><span>Tax</span><b>₹{tax.toLocaleString("en-IN")}</b></div>
-        <div className="summary-total"><span>Total</span><b>₹{total.toLocaleString("en-IN")}</b></div>
+        <div className="summary-group">
+          <div className="summary-row"><span>Subtotal</span><motion.b key={subtotal} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}}>₹{subtotal.toLocaleString("en-IN")}</motion.b></div>
+          <div className="summary-row"><span>Shipping</span><b>{shipping ? `₹${shipping}` : "Free"}</b></div>
+          <div className="summary-row"><span>Discount</span><b>₹{discount}</b></div>
+          <div className="summary-row"><span>Taxes</span><b>₹{tax.toLocaleString("en-IN")}</b></div>
+        </div>
+        <div className="summary-total"><span>Total</span><motion.b key={total} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}>₹{total.toLocaleString("en-IN")}</motion.b></div>
         <button className="checkout-button" onClick={checkout}>Checkout <ArrowRight size={15}/></button>
-        <div className="express"><span>Express checkout</span><div><button>Apple Pay</button><button>Google Pay</button></div></div>
-        <label className="code-input">Coupon code<input placeholder="Enter code"/></label>
-        <label className="code-input">Gift card<input placeholder="Gift card number"/></label>
+        <div className="express"><span>Express checkout</span><div><button>Apple Pay</button><button>Google Pay</button><button>UPI</button></div></div>
+        <button className="codes-toggle" onClick={() => setCodesOpen((value) => !value)}>Coupon & gift cards <ChevronDown size={14}/></button>
+        <AnimatePresence initial={false}>{codesOpen && <motion.div className="codes-panel" initial={{height:0,opacity:0}} animate={{height:"auto",opacity:1}} exit={{height:0,opacity:0}} transition={{duration:.28,ease:[.22,1,.36,1]}}><label className="code-input">Coupon code<input placeholder="Enter code"/></label><label className="code-input">Gift card<input placeholder="Gift card number"/></label></motion.div>}</AnimatePresence>
         <div className="free-shipping"><div><span style={{width:`${progress}%`}}/></div><p>{away ? `Only ₹${away.toLocaleString("en-IN")} away from FREE SHIPPING` : "You unlocked FREE SHIPPING"}</p></div>
+        <div className="summary-note"><Truck size={17}/><span>Estimated delivery: 3–5 business days.</span></div>
         <div className="summary-note"><ShieldCheck size={17}/><span>Secure checkout. Easy returns within 7 days.</span></div>
+        <div className="summary-trust"><span>SSL secured</span><span>Cashfree / UPI</span><span>Easy exchange</span></div>
       </aside>
     </div>
     <section className="recommendations"><div><p>YOU MAY ALSO LIKE</p><h2>Complete the uniform.</h2></div><div className="recommendation-track">{recommended.map((product) => <article className="recommend-card" key={product.slug}><button className="recommend-image" onClick={() => openProduct(product)}><Image src={product.gallery[0].src} alt={product.name} fill sizes="260px" placeholder="blur" blurDataURL={blurDataURL}/>{product.gallery[1] && <Image className="second" src={product.gallery[1].src} alt="" fill sizes="260px" placeholder="blur" blurDataURL={blurDataURL}/>}<Heart size={17}/></button><div><button onClick={() => openProduct(product)}>{product.name}</button><span>₹{product.price.toLocaleString("en-IN")}</span></div><button className="quick-add" onClick={() => add(product)}>Quick add</button></article>)}</div></section>
     <div className="trust-strip"><span>✓ Premium Quality</span><span>✓ Free Shipping above ₹1999</span><span>✓ Easy Returns</span><span>✓ Secure Payments</span></div>
-    <div className="mobile-checkout-bar"><span>₹{total.toLocaleString("en-IN")}</span><button onClick={checkout}>Checkout</button></div>
   </motion.section>
+  <div className="mobile-checkout-bar"><span>₹{total.toLocaleString("en-IN")}</span><button onClick={checkout}>Checkout</button></div>
+  </>
 }
 
 function ProductGallery({product}:{product:Product}) {
