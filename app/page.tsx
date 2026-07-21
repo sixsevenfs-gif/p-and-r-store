@@ -253,7 +253,7 @@ function ProductGallery({product}:{product:Product}) {
       <button className="lightbox-close" onClick={() => setLightbox(null)} aria-label="Close gallery"><X size={21}/></button>
       <button className="lightbox-arrow left" onClick={() => changeLightbox(-1)} aria-label="Previous image"><ChevronLeft size={24}/></button>
       <div className="lightbox-scroll-gallery">
-        {images.map((image, index) => <button id={`lightbox-shot-${product.id}-${index}`} className="lightbox-scroll-frame" key={image.key} onClick={handleLightboxTap}><Image src={image.src} alt={`${product.name} ${image.label}`} fill sizes="100vw" priority={index === lightbox} placeholder="blur" blurDataURL={blurDataURL}/></button>)}
+        {images.map((image, index) => <motion.button id={`lightbox-shot-${product.id}-${index}`} className="lightbox-scroll-frame" key={image.key} onClick={handleLightboxTap} initial={{opacity:.72, scale:.965}} whileInView={{opacity:1, scale:1}} viewport={{amount:.72}} transition={{duration:.42, ease:[.22,1,.36,1]}}><Image src={image.src} alt={`${product.name} ${image.label}`} fill sizes="100vw" priority={index === lightbox} placeholder="blur" blurDataURL={blurDataURL}/></motion.button>)}
       </div>
       <motion.button className={`lightbox-image ${zoomed ? "zoomed" : ""}`} onClick={handleLightboxTap}>
         <Image src={images[lightbox].src} alt={`${product.name} ${images[lightbox].label}`} fill sizes="100vw" priority placeholder="blur" blurDataURL={blurDataURL}/>
