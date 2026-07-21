@@ -222,6 +222,37 @@ export const products: Product[] = [
   },
   {
     "id": 8,
+    "slug": "literally-just-a-girl-tee",
+    "name": "Literally Just A Girl Tee",
+    "price": 1499,
+    "color": "White / Burgundy Print",
+    "category": "Women",
+    "note": "Women's white oversized T-shirt with a burgundy serif chest print, clean back, ribbed neck and relaxed everyday drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/literally-just-a-girl-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/literally-just-a-girl-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/literally-just-a-girl-tee/closeup-fabric.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/literally-just-a-girl-tee/flatlay.png"
+      }
+    ]
+  },
+  {
+    "id": 9,
     "slug": "master-of-sarcasm-crop-tee",
     "name": "Master of Sarcasm Crop Tee",
     "price": 1299,
@@ -252,7 +283,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 9,
+    "id": 10,
     "slug": "milf-tee",
     "name": "MILF Tee",
     "price": 1599,
@@ -283,7 +314,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 10,
+    "id": 11,
     "slug": "my-cardio-tee",
     "name": "My Cardio Tee",
     "price": 1599,
@@ -314,7 +345,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 11,
+    "id": 12,
     "slug": "my-heart-says-yes-tee",
     "name": "My Heart Says Yes Tee",
     "price": 1599,
@@ -345,7 +376,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 12,
+    "id": 13,
     "slug": "nothing-to-wear-tee",
     "name": "Nothing To Wear Tee",
     "price": 1599,
@@ -376,7 +407,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 13,
+    "id": 14,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
