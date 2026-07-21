@@ -175,3 +175,4 @@
 .lightbox-scroll-gallery{display:none}
 @media(max-width:760px){.product-page .back{gap:0}.product-page .back svg{display:none}.lightbox{display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff}.lightbox-image{display:none}.lightbox-scroll-gallery{display:block;padding:62px 0 34px}.lightbox-scroll-frame{display:block;position:relative;width:100%;height:calc(100svh - 86px);min-height:540px;background:#f4f4f1;margin-bottom:1px}.lightbox-scroll-frame img{object-fit:contain}.lightbox-count{position:fixed;right:14px;bottom:14px;left:auto;transform:none;background:rgba(255,255,255,.92);padding:8px 10px;border:1px solid rgba(0,0,0,.08);box-shadow:0 10px 28px rgba(0,0,0,.08);z-index:3}}
 @media(max-width:420px){.lightbox-scroll-gallery{padding-top:56px}.lightbox-scroll-frame{height:calc(100svh - 78px);min-height:520px}.lightbox-count{right:10px;bottom:10px}}
+@media(max-width:760px){.mobile-count,.lightbox-count{display:none!important}}
