@@ -1,11 +1,12 @@
 "use client";
 
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Menu, Plus, Search, ShoppingBag, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Heart, Menu, Minus, Plus, Search, ShieldCheck, ShoppingBag, Truck, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { products, type Product } from "./product-data";
 
+type View = "home" | "collection" | "product" | "cart" | "checkout";
 const blurDataURL = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNDAwJyBoZWlnaHQ9JzUwMCcgdmlld0JveD0nMCAwIDQwMCA1MDAnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zyc+PHJlY3Qgd2lkdGg9JzQwMCcgaGVpZ2h0PSc1MDAnIGZpbGw9JyNmM2YzZjAnLz48L3N2Zz4=";
 const fade = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-10%" }, transition: { duration: .8, ease: [0.22, 1, 0.36, 1] as const } };
 const featuredDropProducts = [
@@ -18,7 +19,7 @@ const featuredDropProducts = [
 });
 
 export default function Home() {
-  const [view, setView] = useState<"home" | "collection" | "product" | "checkout">("home");
+  const [view, setView] = useState<View>("home");
   const [selected, setSelected] = useState(products[0]);
   const [cart, setCart] = useState<Product[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -30,10 +31,15 @@ export default function Home() {
   const heroOpacity = useTransform(scrollYProgress, [0, .13], [1, 0]);
 
   useEffect(() => { const onScroll = () => setNavSolid(window.scrollY > 60 || view !== "home"); onScroll(); addEventListener("scroll", onScroll); return () => removeEventListener("scroll", onScroll); }, [view]);
-  const go = (next: typeof view) => { setView(next); setMenuOpen(false); scrollTo({ top: 0, behavior: "smooth" }); };
+  const go = (next: View) => { setView(next); setMenuOpen(false); setCartOpen(false); scrollTo({ top: 0, behavior: "smooth" }); };
   const goCollection = (filter: "All" | "Men" | "Women" = "All") => { setCollectionFilter(filter); go("collection"); };
   const openProduct = (p: Product) => { setSelected(p); go("product"); };
-  const add = (p = selected) => { setCart(c => [...c, p]); setCartOpen(true); };
+  const add = (p = selected) => { setCart(c => [...c, p]); go("cart"); };
+  const setCartQuantity = (product: Product, quantity: number) => setCart((current) => {
+    const safeQuantity = Math.max(0, quantity);
+    const withoutProduct = current.filter((item) => item.slug !== product.slug);
+    return [...withoutProduct, ...Array.from({ length: safeQuantity }, () => product)];
+  });
   const collectionProducts = collectionFilter === "All" ? products : products.filter((product) => product.category === collectionFilter);
 
   return <main>
@@ -41,7 +47,7 @@ export default function Home() {
       <button className="mobile-menu" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Menu size={20}/></button>
       <nav className="nav-left"><button onClick={() => goCollection("All")}>Shop</button><button onClick={() => goCollection("Men")}>Men</button><button onClick={() => goCollection("Women")}>Women</button><button onClick={() => { go("home"); setTimeout(() => document.querySelector("#about")?.scrollIntoView({behavior:"smooth"}), 50); }}>About</button></nav>
       <button className="wordmark" onClick={() => go("home")} aria-label="P and R home">P<span>&</span>R</button>
-      <nav className="nav-right"><button aria-label="Search"><Search size={18}/><span>Search</span></button><button onClick={() => setCartOpen(true)}><ShoppingBag size={18}/><span>Cart ({cart.length})</span></button><button className="account">Account</button></nav>
+      <nav className="nav-right"><button aria-label="Search"><Search size={18}/><span>Search</span></button><button onClick={() => go("cart")}><ShoppingBag size={18}/><span>Cart ({cart.length})</span></button><button className="account">Account</button></nav>
     </header>
 
     <AnimatePresence mode="wait">
@@ -83,8 +89,10 @@ export default function Home() {
         <ProductInfo product={selected} onAdd={() => add()} onBuy={() => { add(); setCartOpen(false); go("checkout"); }}/>
       </motion.div>}
 
+      {view === "cart" && <CartPage key="cart" cart={cart} add={add} updateQuantity={setCartQuantity} openProduct={openProduct} shop={goCollection} checkout={() => go("checkout")}/>}
+
       {view === "checkout" && <motion.div key="checkout" className="checkout" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-        <button className="back" onClick={() => setCartOpen(true)}><ArrowLeft size={15}/> Return to bag</button><p>SECURE CHECKOUT</p><h1>Finish your order</h1>
+        <button className="back" onClick={() => go("cart")}><ArrowLeft size={15}/> Return to bag</button><p>SECURE CHECKOUT</p><h1>Finish your order</h1>
         <div className="checkout-grid"><form onSubmit={e=>e.preventDefault()}><label>Email address<input type="email" placeholder="you@example.com"/></label><h3>Delivery</h3><div className="split"><label>First name<input/></label><label>Last name<input/></label></div><label>Address<input/></label><div className="split"><label>City<input/></label><label>PIN code<input inputMode="numeric"/></label></div><button className="primary">Continue to payment</button></form><aside><h3>Your order</h3>{cart.map((p,i)=><div className="order-item" key={i}><img src={p.gallery[0].src}/><span>{p.name}<small>{p.color} / M</small></span><b>₹{p.price.toLocaleString("en-IN")}</b></div>)}<div className="total"><span>Total</span><b>₹{cart.reduce((s,p)=>s+p.price,0).toLocaleString("en-IN")}</b></div></aside></div>
       </motion.div>}
     </AnimatePresence>
@@ -99,6 +107,73 @@ function ProductCard({p,open,add}:{p:Product,i:number,open:(p:Product)=>void,add
   const first = p.gallery[0];
   const second = p.gallery[1] ?? p.gallery[0];
   return <motion.article className="product-card" {...fade}><button className="product-image" onClick={()=>open(p)}><Image src={first.src} alt={`${p.name} ${first.label}`} fill sizes="(max-width: 760px) 50vw, 33vw" placeholder="blur" blurDataURL={blurDataURL}/><Image className="second" src={second.src} alt="" fill sizes="(max-width: 760px) 50vw, 33vw" placeholder="blur" blurDataURL={blurDataURL}/><span>View piece <ArrowRight size={14}/></span></button><div className="product-meta"><button onClick={()=>open(p)}><b>{p.name}</b><small>{p.color}</small></button><span>₹{p.price.toLocaleString("en-IN")}</span><button className="quick" onClick={()=>add(p)}>Quick add</button></div></motion.article>
+}
+
+function CartPage({cart,add,updateQuantity,openProduct,shop,checkout}:{cart:Product[],add:(p:Product)=>void,updateQuantity:(p:Product,quantity:number)=>void,openProduct:(p:Product)=>void,shop:(filter?:"All"|"Men"|"Women")=>void,checkout:()=>void}) {
+  const [sizes, setSizes] = useState<Record<string, string>>({});
+  const items = products.flatMap((product) => {
+    const quantity = cart.filter((item) => item.slug === product.slug).length;
+    return quantity ? [{ product, quantity }] : [];
+  });
+  const subtotal = cart.reduce((sum, product) => sum + product.price, 0);
+  const freeShippingAt = 1999;
+  const away = Math.max(0, freeShippingAt - subtotal);
+  const shipping = subtotal === 0 || away === 0 ? 0 : 99;
+  const discount = 0;
+  const tax = Math.round(subtotal * 0.05);
+  const total = subtotal + shipping - discount;
+  const progress = Math.min(100, Math.round((subtotal / freeShippingAt) * 100));
+  const recommended = products.filter((product) => !items.some((item) => item.product.slug === product.slug)).slice(0, 8);
+
+  if (!cart.length) return <motion.section className="cart-page empty-cart-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+    <div className="empty-cart-visual"><img src="/images/campaign-hero.png" alt="P&R campaign"/><div><ShoppingBag size={42}/><span>P&R / BAG</span></div></div>
+    <div className="empty-cart-copy"><p>SHOPPING BAG</p><h1>Your bag is empty.</h1><span>Looks like you haven't added anything yet.</span><div><button className="primary" onClick={() => shop("All")}>Continue Shopping</button><button className="secondary" onClick={() => shop("Women")}>Trending Collection</button></div></div>
+  </motion.section>;
+
+  return <motion.section className="cart-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+    <div className="cart-hero"><p>SHOPPING BAG</p><h1>Review your pieces.</h1><span>{items.length} {items.length === 1 ? "piece" : "pieces"} selected for checkout.</span></div>
+    <div className="cart-layout">
+      <div className="bag-column">
+        <AnimatePresence initial={false}>
+          {items.map(({product, quantity}, index) => <motion.article className="bag-card" key={product.slug} initial={{opacity:0,y:24,scale:.98}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,scale:.96}} transition={{duration:.42,delay:index*.04,ease:[.22,1,.36,1]}}>
+            <button className="bag-image" onClick={() => openProduct(product)}><Image src={product.gallery[0].src} alt={product.name} fill sizes="(max-width: 760px) 34vw, 22vw" placeholder="blur" blurDataURL={blurDataURL}/></button>
+            <div className="bag-details">
+              <div className="bag-topline"><span>Edition 001 / {product.category}</span><button aria-label="Save to wishlist"><Heart size={18}/></button></div>
+              <button className="bag-name" onClick={() => openProduct(product)}>{product.name}</button>
+              <p>{product.note}</p>
+              <div className="bag-options">
+                <label>Color <span>{product.color}</span></label>
+                <label>Size <select value={sizes[product.slug] ?? "M"} onChange={(event) => setSizes((current) => ({...current, [product.slug]: event.target.value}))}>{["XS","S","M","L","XL"].map((size) => <option key={size}>{size}</option>)}</select></label>
+              </div>
+              <div className="bag-actions">
+                <div className="qty" aria-label={`Quantity for ${product.name}`}><button onClick={() => updateQuantity(product, quantity - 1)}><Minus size={14}/></button><motion.span key={quantity} initial={{y:8,opacity:0}} animate={{y:0,opacity:1}}>{quantity}</motion.span><button onClick={() => updateQuantity(product, quantity + 1)}><Plus size={14}/></button></div>
+                <button className="remove" onClick={() => updateQuantity(product, 0)}>Remove</button>
+              </div>
+              <div className="delivery"><Truck size={16}/><span>Estimated delivery: 3–5 business days</span></div>
+            </div>
+            <strong>₹{(product.price * quantity).toLocaleString("en-IN")}</strong>
+          </motion.article>)}
+        </AnimatePresence>
+      </div>
+      <aside className="summary-card">
+        <p>ORDER SUMMARY</p>
+        <div className="summary-row"><span>Subtotal</span><b>₹{subtotal.toLocaleString("en-IN")}</b></div>
+        <div className="summary-row"><span>Shipping</span><b>{shipping ? `₹${shipping}` : "Free"}</b></div>
+        <div className="summary-row"><span>Discount</span><b>₹{discount}</b></div>
+        <div className="summary-row"><span>Tax</span><b>₹{tax.toLocaleString("en-IN")}</b></div>
+        <div className="summary-total"><span>Total</span><b>₹{total.toLocaleString("en-IN")}</b></div>
+        <button className="checkout-button" onClick={checkout}>Checkout <ArrowRight size={15}/></button>
+        <div className="express"><span>Express checkout</span><div><button>Apple Pay</button><button>Google Pay</button></div></div>
+        <label className="code-input">Coupon code<input placeholder="Enter code"/></label>
+        <label className="code-input">Gift card<input placeholder="Gift card number"/></label>
+        <div className="free-shipping"><div><span style={{width:`${progress}%`}}/></div><p>{away ? `Only ₹${away.toLocaleString("en-IN")} away from FREE SHIPPING` : "You unlocked FREE SHIPPING"}</p></div>
+        <div className="summary-note"><ShieldCheck size={17}/><span>Secure checkout. Easy returns within 7 days.</span></div>
+      </aside>
+    </div>
+    <section className="recommendations"><div><p>YOU MAY ALSO LIKE</p><h2>Complete the uniform.</h2></div><div className="recommendation-track">{recommended.map((product) => <article className="recommend-card" key={product.slug}><button className="recommend-image" onClick={() => openProduct(product)}><Image src={product.gallery[0].src} alt={product.name} fill sizes="260px" placeholder="blur" blurDataURL={blurDataURL}/>{product.gallery[1] && <Image className="second" src={product.gallery[1].src} alt="" fill sizes="260px" placeholder="blur" blurDataURL={blurDataURL}/>}<Heart size={17}/></button><div><button onClick={() => openProduct(product)}>{product.name}</button><span>₹{product.price.toLocaleString("en-IN")}</span></div><button className="quick-add" onClick={() => add(product)}>Quick add</button></article>)}</div></section>
+    <div className="trust-strip"><span>✓ Premium Quality</span><span>✓ Free Shipping above ₹1999</span><span>✓ Easy Returns</span><span>✓ Secure Payments</span></div>
+    <div className="mobile-checkout-bar"><span>₹{total.toLocaleString("en-IN")}</span><button onClick={checkout}>Checkout</button></div>
+  </motion.section>
 }
 
 function ProductGallery({product}:{product:Product}) {
