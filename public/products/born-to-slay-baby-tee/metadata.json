@@ -1,0 +1,13 @@
+{
+  "name": "Born To Slay Baby Tee",
+  "price": 1299,
+  "color": "White / Burgundy Print",
+  "category": "Women",
+  "note": "Women's white baby tee with a burgundy serif chest print, clean back, ribbed neck and fitted everyday drape.",
+  "images": [
+    { "file": "front.png", "label": "Front Print" },
+    { "file": "back.png", "label": "Back" },
+    { "file": "flatlay.png", "label": "Flatlay" },
+    { "file": "closeup-fabric.png", "label": "Print Detail" }
+  ]
+}

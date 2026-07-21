@@ -36,6 +36,37 @@ export const products: Product[] = [
   },
   {
     "id": 2,
+    "slug": "born-to-slay-baby-tee",
+    "name": "Born To Slay Baby Tee",
+    "price": 1299,
+    "color": "White / Burgundy Print",
+    "category": "Women",
+    "note": "Women's white baby tee with a burgundy serif chest print, clean back, ribbed neck and fitted everyday drape.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/born-to-slay-baby-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/born-to-slay-baby-tee/back.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/born-to-slay-baby-tee/flatlay.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/born-to-slay-baby-tee/closeup-fabric.png"
+      }
+    ]
+  },
+  {
+    "id": 3,
     "slug": "dump-him-crop-tee",
     "name": "Dump Him Crop Tee",
     "price": 1299,
@@ -66,7 +97,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 3,
+    "id": 4,
     "slug": "even-at-my-worst-tee",
     "name": "Even At My Worst Tee",
     "price": 1599,
@@ -97,7 +128,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 4,
+    "id": 5,
     "slug": "hot-wife-tee",
     "name": "Hot Wife Tee",
     "price": 1499,
@@ -128,7 +159,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 5,
+    "id": 6,
     "slug": "i-hate-explaining-tee",
     "name": "I Hate Explaining Tee",
     "price": 1599,
@@ -159,7 +190,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 6,
+    "id": 7,
     "slug": "i-told-my-mom-tee",
     "name": "I Told My Mom Tee",
     "price": 1599,
@@ -190,7 +221,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 7,
+    "id": 8,
     "slug": "master-of-sarcasm-crop-tee",
     "name": "Master of Sarcasm Crop Tee",
     "price": 1299,
@@ -221,7 +252,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 8,
+    "id": 9,
     "slug": "milf-tee",
     "name": "MILF Tee",
     "price": 1599,
@@ -252,7 +283,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 9,
+    "id": 10,
     "slug": "my-cardio-tee",
     "name": "My Cardio Tee",
     "price": 1599,
@@ -283,7 +314,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 10,
+    "id": 11,
     "slug": "my-heart-says-yes-tee",
     "name": "My Heart Says Yes Tee",
     "price": 1599,
@@ -314,7 +345,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 11,
+    "id": 12,
     "slug": "nothing-to-wear-tee",
     "name": "Nothing To Wear Tee",
     "price": 1599,
@@ -345,7 +376,7 @@ export const products: Product[] = [
     ]
   },
   {
-    "id": 12,
+    "id": 13,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,
