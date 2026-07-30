@@ -3,10 +3,10 @@
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Heart, Menu, Minus, Plus, Search, ShieldCheck, ShoppingBag, Truck, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { products, type Product } from "./product-data";
 
-type View = "home" | "collection" | "product" | "cart" | "checkout";
+type View = "home" | "collection" | "product" | "cart" | "checkout" | "about";
 const blurDataURL = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNDAwJyBoZWlnaHQ9JzUwMCcgdmlld0JveD0nMCAwIDQwMCA1MDAnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zyc+PHJlY3Qgd2lkdGg9JzQwMCcgaGVpZ2h0PSc1MDAnIGZpbGw9JyNmM2YzZjAnLz48L3N2Zz4=";
 const fade = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-10%" }, transition: { duration: .8, ease: [0.22, 1, 0.36, 1] as const } };
 const featuredDropProducts = [
@@ -24,6 +24,7 @@ export default function Home() {
   const [cart, setCart] = useState<Product[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [navSolid, setNavSolid] = useState(false);
   const [collectionFilter, setCollectionFilter] = useState<"All" | "Men" | "Women">("All");
   const { scrollYProgress } = useScroll();
@@ -31,7 +32,10 @@ export default function Home() {
   const heroOpacity = useTransform(scrollYProgress, [0, .13], [1, 0]);
 
   useEffect(() => { const onScroll = () => setNavSolid(window.scrollY > 60 || view !== "home"); onScroll(); addEventListener("scroll", onScroll); return () => removeEventListener("scroll", onScroll); }, [view]);
-  const go = (next: View) => { setView(next); setMenuOpen(false); setCartOpen(false); requestAnimationFrame(() => scrollTo({ top: 0, behavior: next === "cart" ? "auto" : "smooth" })); };
+  useEffect(() => { const saved = localStorage.getItem("pr-bag"); if (saved) { try { const slugs = JSON.parse(saved) as string[]; setCart(slugs.flatMap(slug => products.filter(p => p.slug === slug))); } catch {} } }, []);
+  useEffect(() => { localStorage.setItem("pr-bag", JSON.stringify(cart.map(p => p.slug))); }, [cart]);
+  useEffect(() => { document.body.style.overflow = menuOpen || searchOpen ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [menuOpen, searchOpen]);
+  const go = (next: View) => { setView(next); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:next}, "", next === "home" ? "/" : `/${next === "collection" ? "shop" : next === "cart" ? "bag" : next}`); requestAnimationFrame(() => scrollTo({ top: 0, behavior: next === "cart" ? "auto" : "smooth" })); };
   const goCollection = (filter: "All" | "Men" | "Women" = "All") => { setCollectionFilter(filter); go("collection"); };
   const openProduct = (p: Product) => { setSelected(p); go("product"); };
   const add = (p = selected) => { setCart(c => [...c, p]); go("cart"); };
@@ -45,9 +49,9 @@ export default function Home() {
   return <main>
     <header className={`nav ${navSolid ? "solid" : ""}`}>
       <button className="mobile-menu" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Menu size={20}/></button>
-      <nav className="nav-left"><button onClick={() => goCollection("All")}>Shop</button><button onClick={() => goCollection("Men")}>Men</button><button onClick={() => goCollection("Women")}>Women</button><button onClick={() => { go("home"); setTimeout(() => document.querySelector("#about")?.scrollIntoView({behavior:"smooth"}), 50); }}>About</button></nav>
+      <nav className="nav-left"><button onClick={() => goCollection("All")}>Shop</button><button onClick={() => goCollection("All")}>New Drop</button><button onClick={() => goCollection("Men")}>Men</button><button onClick={() => goCollection("Women")}>Women</button><button onClick={() => go("about")}>About</button></nav>
       <button className="wordmark" onClick={() => go("home")} aria-label="P and R home">P<span>&</span>R</button>
-      <nav className="nav-right"><button aria-label="Search"><Search size={18}/><span>Search</span></button><button onClick={() => go("cart")}><ShoppingBag size={18}/><span>Cart ({cart.length})</span></button><button className="account">Account</button></nav>
+      <nav className="nav-right"><button aria-label="Search" onClick={() => setSearchOpen(true)}><Search size={18}/><span>Search</span></button><button onClick={() => go("cart")}><ShoppingBag size={18}/><span>Bag ({cart.length})</span></button><button className="account" title="Account backend not connected">Account</button></nav>
     </header>
 
     <AnimatePresence mode="wait">
@@ -74,8 +78,17 @@ export default function Home() {
         </section>
 
         <section className="about" id="about"><motion.div {...fade}><p>P&R / THE STANDARD</p><h2>Less noise.<br/><em>More presence.</em></h2></motion.div><motion.div {...fade}><p>P&R was created around a simple belief: the things you wear most should be the things made best.</p><p>Our first study is the oversized T-shirt—reworked through proportion, weight and restraint. Made for movement. Designed for repetition.</p><div className="facts"><span>Designed in India</span><span>240 GSM cotton</span><span>Unisex proportions</span></div></motion.div></section>
+        <section className="drop core"><motion.div className="section-head" {...fade}><div><p>CORE ESSENTIALS</p><h2>The daily rotation.</h2></div><button onClick={() => goCollection("All")}>Shop all <ArrowRight size={14}/></button></motion.div><div className="product-grid core-products">{products.slice(4,8).map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div></section>
+        <section className="campaign-break"><Image src="/images/campaign-hero.png" alt="P&R Edition 001 campaign" fill sizes="100vw"/><div><p>EDITION 001</p><h2>Built for everyday.</h2><button onClick={() => goCollection("All")}>Explore the collection <ArrowRight size={14}/></button></div></section>
         <Newsletter/>
       </motion.div>}
+
+      {view === "about" && <motion.section className="about-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+        <header><p>ABOUT P&R</p><h1>A study in restraint,<br/><em>proportion and repetition.</em></h1></header>
+        <div className="about-intro"><h2>The pieces worn most should be made best.</h2><div><p>P&R makes oversized essentials through considered proportion, weight and restraint. Our first study is the T-shirt: familiar, useful and made for repetition.</p><p>The collection is designed in India and built around an easy, unisex point of view. Specific sourcing, factory and certification details will be published when verified.</p></div></div>
+        <div className="about-visual"><Image src="/images/bone-editorial.png" alt="P&R oversized fit study" fill sizes="(max-width:760px) 100vw, 50vw"/><div><p>FIT PHILOSOPHY</p><h2>Room to move.<br/>Enough structure to hold its form.</h2><p>Dropped shoulders and deliberate volume shape the silhouette. Refer to each product page for its current fit and care notes.</p></div></div>
+        <div className="about-contact"><p>STUDIO / CONTACT</p><h2>Questions about fit, product or an order?</h2><a href="mailto:studio@pandr.example">studio@pandr.example</a><small>Replace this temporary address with the verified studio email before launch.</small></div>
+      </motion.section>}
 
       {view === "collection" && <motion.div key="collection" className="collection-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
         <div className="collection-title"><p>COLLECTION / EDITION 001</p><h1>{collectionFilter === "Women" ? "Women" : collectionFilter === "Men" ? "Men" : "Oversized"}<br/>{collectionFilter === "All" ? "Essentials" : "Essentials"}</h1><span>{collectionFilter === "Women" ? "Women’s crop tees and everyday essentials." : "Four studies in proportion, weight and ease."}</span></div>
@@ -98,8 +111,9 @@ export default function Home() {
     </AnimatePresence>
 
     <Footer go={go}/>
+    <AnimatePresence>{searchOpen && <SearchOverlay close={() => setSearchOpen(false)} openProduct={openProduct}/>}</AnimatePresence>
     <AnimatePresence>{cartOpen && <Cart cart={cart} close={()=>setCartOpen(false)} remove={(i)=>setCart(c=>c.filter((_,x)=>x!==i))} checkout={()=>{setCartOpen(false);go("checkout")}}/>}</AnimatePresence>
-    <AnimatePresence>{menuOpen && <motion.div className="menu" initial={{x:"-100%"}} animate={{x:0}} exit={{x:"-100%"}} transition={{ease:[.22,1,.36,1],duration:.55}}><button onClick={()=>setMenuOpen(false)}><X/></button><nav><button onClick={()=>goCollection("All")}>Shop</button><button onClick={()=>goCollection("Men")}>Men</button><button onClick={()=>goCollection("Women")}>Women</button><button onClick={()=>go("home")}>Campaign</button></nav><p>Less Noise. More Presence.</p></motion.div>}</AnimatePresence>
+    <AnimatePresence>{menuOpen && <motion.div className="menu" initial={{x:"-100%"}} animate={{x:0}} exit={{x:"-100%"}} transition={{ease:[.22,1,.36,1],duration:.55}}><button onClick={()=>setMenuOpen(false)} aria-label="Close menu"><X/></button><nav><button onClick={()=>goCollection("All")}>Shop</button><button onClick={()=>goCollection("All")}>New Drop</button><button onClick={()=>goCollection("Men")}>Men</button><button onClick={()=>goCollection("Women")}>Women</button><button onClick={()=>go("about")}>About</button><button onClick={()=>setSearchOpen(true)}>Search</button></nav><p>Less noise. More presence.</p></motion.div>}</AnimatePresence>
   </main>
 }
 
@@ -268,5 +282,6 @@ function ProductInfo({product,onAdd,onBuy}:{product:Product,onAdd:()=>void,onBuy
 
 function Cart({cart,close,remove,checkout}:{cart:Product[],close:()=>void,remove:(i:number)=>void,checkout:()=>void}) { return <><motion.div className="scrim" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={close}/><motion.aside className="cart" initial={{x:"100%"}} animate={{x:0}} exit={{x:"100%"}} transition={{duration:.5,ease:[.22,1,.36,1]}}><header><span>Your bag / {cart.length}</span><button onClick={close}><X/></button></header>{!cart.length?<div className="empty"><ShoppingBag/><h2>Your bag is empty.</h2><button onClick={close}>Continue shopping</button></div>:<><div className="cart-list">{cart.map((p,i)=><div className="cart-item" key={i}><img src={p.gallery[0].src}/><div><b>{p.name}</b><small>{p.color} / M</small><span>₹{p.price.toLocaleString("en-IN")}</span><button onClick={()=>remove(i)}>Remove</button></div></div>)}</div><footer><p><span>Subtotal</span><b>₹{cart.reduce((s,p)=>s+p.price,0).toLocaleString("en-IN")}</b></p><small>Shipping calculated at checkout.</small><button className="primary" onClick={checkout}>Checkout <ArrowRight size={15}/></button></footer></>}</motion.aside></> }
 
-function Newsletter(){return <section className="newsletter"><p>PRIVATE NOTES / P&R</p><h2>Occasional signals.<br/>No noise.</h2><form onSubmit={e=>e.preventDefault()}><input type="email" aria-label="Email address" placeholder="Enter your email address"/><button aria-label="Subscribe"><ArrowRight/></button></form><span>New editions, stories and considered updates.</span></section>}
+function SearchOverlay({close,openProduct}:{close:()=>void,openProduct:(p:Product)=>void}){const [query,setQuery]=useState("");const input=useRef<HTMLInputElement>(null);useEffect(()=>{input.current?.focus();const key=(e:KeyboardEvent)=>e.key==="Escape"&&close();addEventListener("keydown",key);return()=>removeEventListener("keydown",key)},[close]);const results=query.trim()?products.filter(p=>`${p.name} ${p.color} ${p.category}`.toLowerCase().includes(query.toLowerCase())):products.slice(0,4);return <motion.div className="search-overlay" role="dialog" aria-modal="true" aria-label="Product search" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><header><label htmlFor="site-search">Search P&R</label><input ref={input} id="site-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, colour or category"/><button onClick={close} aria-label="Close search"><X/></button></header><div className="search-body"><p>{query ? `${results.length} RESULTS` : "TRENDING NOW"}</p>{results.length?<div>{results.map(p=><button key={p.slug} onClick={()=>{close();openProduct(p)}}><Image src={p.gallery[0].src} alt="" width={90} height={112}/><span><b>{p.name}</b><small>{p.color} / {p.category}</small></span><strong>₹{p.price.toLocaleString("en-IN")}</strong></button>)}</div>:<div className="search-empty"><h2>Nothing found.</h2><span>Try “black”, “women” or “oversized”.</span></div>}</div></motion.div>}
+function Newsletter(){const [status,setStatus]=useState<"idle"|"loading"|"success"|"error">("idle");const submit=(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const form=e.currentTarget;const email=new FormData(form).get("email")?.toString()??"";if(!/^\\S+@\\S+\\.\\S+$/.test(email)){setStatus("error");return}setStatus("loading");setTimeout(()=>setStatus("success"),500)};return <section className="newsletter"><p>PRIVATE NOTES / P&R</p><h2>Updates worth opening.</h2><span>New editions, restocks and occasional studio notes.</span><form onSubmit={submit}><label className="sr-only" htmlFor="newsletter-email">Email address</label><input id="newsletter-email" name="email" type="email" placeholder="Enter your email address" aria-describedby="newsletter-status"/><button aria-label="Subscribe" disabled={status==="loading"}>{status==="loading"?"…":<ArrowRight/>}</button></form><small id="newsletter-status">{status==="success"?"You’re on the list.":status==="error"?"Enter a valid email address.":"By subscribing, you agree to receive occasional updates from P&R."}</small></section>}
 function Footer({go}:{go:(v:"home"|"collection"|"product"|"checkout")=>void}){return <footer className="site-footer"><button className="footer-logo" onClick={()=>go("home")}>P<span>&</span>R</button><div><p>Explore</p><button onClick={()=>go("collection")}>Shop all</button><button onClick={()=>go("collection")}>Men</button><button onClick={()=>go("collection")}>Women</button></div><div><p>Information</p><button>Shipping & returns</button><button>Care guide</button><button>Contact</button></div><div><p>Follow</p><button>Instagram</button><button>Pinterest</button></div><small>© 2026 P&R STUDIOS — INDIA</small></footer>}
