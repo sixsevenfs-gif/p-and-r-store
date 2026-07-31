@@ -54,14 +54,14 @@ export async function PATCH(request: Request) {
     return Response.json({ updated: true });
   }
 
-  if (payload.action === "cancel-order" || payload.action === "refund-order") {
+  if (payload.action === "cancel-order" || payload.action === "refund-order" || payload.action === "fail-order") {
     const orderId = Number(payload.orderId);
     const order = await db.select().from(orders).where(eq(orders.id, orderId)).get();
     if (!order) return Response.json({ error: "Order not found." }, { status: 404 });
-    const nextStatus = payload.action === "refund-order" ? "refunded" : "cancelled";
+    const nextStatus = payload.action === "refund-order" ? "refunded" : payload.action === "fail-order" ? "failed" : "cancelled";
     await db.update(orders).set(nextStatus === "refunded" ? { status: nextStatus, refundedAt: new Date() } : { status: nextStatus, cancelledAt: new Date() }).where(eq(orders.id, order.id));
     if (order.walletAmount > 0) {
-      await db.insert(walletLedger).values({ customerId: order.customerId, orderId: order.id, amount: order.walletAmount, type: "refund", status: "available", note: `Wallet returned for ${nextStatus} order #${order.id}`, idempotencyKey: `order:${order.id}:wallet-return` }).onConflictDoNothing();
+      await db.insert(walletLedger).values({ customerId: order.customerId, orderId: order.id, amount: order.walletAmount * 100, type: "refund", status: "available", note: `Wallet returned for ${nextStatus} order #${order.id}`, idempotencyKey: `order:${order.id}:wallet-return` }).onConflictDoNothing();
     }
     const referral = await db.select().from(referrals).where(eq(referrals.qualifyingOrderId, order.id)).get();
     if (referral) {

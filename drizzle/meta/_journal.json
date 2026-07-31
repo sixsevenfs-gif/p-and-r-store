@@ -15,6 +15,20 @@
       "when": 1785464547642,
       "tag": "0001_silent_lily_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785465700000,
+      "tag": "0002_commerce_control",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1785466708811,
+      "tag": "0003_glossy_eternity",
+      "breakpoints": true
     }
   ]
 }

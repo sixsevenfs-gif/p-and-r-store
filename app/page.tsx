@@ -1,46 +1,51 @@
 "use client";
 
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
-import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, LogOut, Menu, Minus, Plus, Search, ShieldCheck, ShoppingBag, Truck, UserRound, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, LogOut, Menu, Minus, Plus, Search, ShieldCheck, ShoppingBag, Truck, UserRound, WalletCards, X } from "lucide-react";
 import Image from "next/image";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { products, type Product } from "./product-data";
+import { products as seedProducts, type Product } from "./product-data";
 
 type View = "home" | "collection" | "product" | "cart" | "checkout" | "about" | "account";
 const blurDataURL = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNDAwJyBoZWlnaHQ9JzUwMCcgdmlld0JveD0nMCAwIDQwMCA1MDAnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zyc+PHJlY3Qgd2lkdGg9JzQwMCcgaGVpZ2h0PSc1MDAnIGZpbGw9JyNmM2YzZjAnLz48L3N2Zz4=";
+const products = seedProducts;
 const fade = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-10%" }, transition: { duration: .8, ease: [0.22, 1, 0.36, 1] as const } };
-const featuredDropProducts = [
-  "fall-in-love-tee",
-  "pre-rich-tee",
-  "music-remembered-tee",
-  "need-money-for-porsche-tee",
-  "dont-call-me-lucky-tee",
-].flatMap((slug) => {
-  const product = products.find((item) => item.slug === slug);
-  return product ? [product] : [];
-});
-
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>(seedProducts);
+  const [cms, setCms] = useState<Record<string,{title?:string;subtitle?:string;body?:string;image_url?:string;cta_label?:string;cta_url?:string}>>({});
   const [view, setView] = useState<View>("home");
-  const [selected, setSelected] = useState(products[0]);
+  const [selected, setSelected] = useState(seedProducts[0]);
   const [cart, setCart] = useState<Product[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [navSolid, setNavSolid] = useState(false);
+  const [headerWallet, setHeaderWallet] = useState<{available:number;pending:number}|null>(null);
   const [collectionFilter, setCollectionFilter] = useState<"All" | "Men" | "Women">("All");
   const { scrollYProgress } = useScroll();
   const heroScale = useTransform(scrollYProgress, [0, .16], [1.08, 1]);
   const heroOpacity = useTransform(scrollYProgress, [0, .13], [1, 0]);
+  const featuredDropProducts = products.slice(0,5);
+  const hero=cms.hero;
 
+  useEffect(()=>{fetch("/api/catalog").then(r=>r.ok?r.json():Promise.reject()).then(({products:rows})=>{const next:Product[]=rows.map((row:Record<string,unknown>)=>({id:Number(row.id),slug:String(row.slug),name:String(row.name),price:Number(row.price)/100,color:String(row.color),category:(row.category==="Women"?"Women":"Men"),note:String(row.description||""),gallery:[{key:"front",label:"Front",src:String(row.image_url||"/images/campaign-hero.png")}]}));if(next.length){setProducts(next);setSelected(current=>next.find(p=>p.slug===current.slug)||next[0])}}).catch(()=>{})},[]);
+  useEffect(()=>{fetch("/api/content").then(r=>r.ok?r.json():Promise.reject()).then(({sections})=>setCms(Object.fromEntries(sections.map((s:Record<string,unknown>)=>[String(s.section_key),s])))).catch(()=>{})},[]);
   useEffect(() => { const onScroll = () => setNavSolid(window.scrollY > 60 || view !== "home"); onScroll(); addEventListener("scroll", onScroll); return () => removeEventListener("scroll", onScroll); }, [view]);
   useEffect(() => { queueMicrotask(() => setView(viewFromPath(location.pathname))); const onPop = () => setView(viewFromPath(location.pathname)); addEventListener("popstate", onPop); return () => removeEventListener("popstate", onPop); }, []);
   useEffect(() => { const saved = localStorage.getItem("pr-bag"); if (saved) { try { const slugs = JSON.parse(saved) as string[]; queueMicrotask(() => setCart(slugs.flatMap(slug => products.filter(p => p.slug === slug)))); } catch {} } }, []);
   useEffect(() => { const code = new URLSearchParams(location.search).get("ref"); if (code) localStorage.setItem("pr-referral", code); }, []);
+  const refreshWallet = async () => {
+    try {
+      const response = await fetch("/api/wallet", { cache: "no-store" });
+      setHeaderWallet(response.ok ? await response.json() as {available:number;pending:number} : null);
+    } catch { setHeaderWallet(null); }
+  };
+  useEffect(() => { queueMicrotask(() => void refreshWallet()); }, []);
   useEffect(() => { localStorage.setItem("pr-bag", JSON.stringify(cart.map(p => p.slug))); }, [cart]);
   useEffect(() => { document.body.style.overflow = menuOpen || searchOpen ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [menuOpen, searchOpen]);
   const go = (next: View) => { setView(next); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:next}, "", next === "home" ? "/" : `/${next === "collection" ? "shop" : next === "cart" ? "bag" : next}`); requestAnimationFrame(() => scrollTo({ top: 0, behavior: next === "cart" ? "auto" : "smooth" })); };
   const goCollection = (filter: "All" | "Men" | "Women" = "All") => { setCollectionFilter(filter); go("collection"); };
+  const goWallet = () => { setView("account"); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:"account"}, "", "/account?tab=wallet"); requestAnimationFrame(() => scrollTo({top:0,behavior:"smooth"})); };
   const openProduct = (p: Product) => { setSelected(p); go("product"); };
   const add = (p = selected) => { setCart(c => [...c, p]); go("cart"); };
   const setCartQuantity = (product: Product, quantity: number) => setCart((current) => {
@@ -55,16 +60,16 @@ export default function Home() {
       <button className="mobile-menu" aria-label="Open menu" onClick={() => setMenuOpen(true)}><Menu size={20}/></button>
       <nav className="nav-left"><button onClick={() => goCollection("All")}>Shop</button><button onClick={() => goCollection("All")}>New Drop</button><button onClick={() => goCollection("Men")}>Men</button><button onClick={() => goCollection("Women")}>Women</button><button onClick={() => go("about")}>About</button></nav>
       <button className="wordmark" onClick={() => go("home")} aria-label="P and R home">P<span>&</span>R</button>
-      <nav className="nav-right"><button aria-label="Search" onClick={() => setSearchOpen(true)}><Search size={18}/><span>Search</span></button><button onClick={() => go("cart")}><ShoppingBag size={18}/><span>Bag ({cart.length})</span></button><button className="account" onClick={() => go("account")}><UserRound size={17}/><span>Account</span></button></nav>
+      <nav className="nav-right"><button aria-label="Search" onClick={() => setSearchOpen(true)}><Search size={18}/><span>Search</span></button>{headerWallet&&<button className="header-wallet" onClick={goWallet} title="Real store credit — use at checkout"><WalletCards size={16}/><span><b>Wallet ₹{Math.floor(headerWallet.available/100).toLocaleString("en-IN")}</b><small>Use at checkout</small></span></button>}<button onClick={() => go("cart")}><ShoppingBag size={18}/><span>Bag ({cart.length})</span></button><button className="account" onClick={() => go("account")}><UserRound size={17}/><span>Account</span></button></nav>
     </header>
 
     <AnimatePresence mode="wait">
       {view === "home" && <motion.div key="home" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
         <section className="hero">
-          <motion.img style={{scale:heroScale}} src="/images/campaign-hero.png" alt="P&R oversized essentials campaign" />
+          <motion.img style={{scale:heroScale}} src={hero?.image_url||"/images/campaign-hero.png"} alt="P&R oversized essentials campaign" />
           <div className="hero-shade"/>
           <motion.div className="hero-copy" style={{opacity:heroOpacity}} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{duration:1.2,delay:.2}}>
-            <p>Edition 001 / 2026</p><h1>Oversized<br/>Essentials</h1><span>Built for everyday.</span><button onClick={() => goCollection("All")}>Shop the collection <ArrowRight size={14}/></button>
+            <p>Edition 001 / 2026</p><h1>{hero?.title||<>Oversized<br/>Essentials</>}</h1><span>{hero?.subtitle||"Built for everyday."}</span><button onClick={() => goCollection("All")}>{hero?.cta_label||"Shop the collection"} <ArrowRight size={14}/></button>
           </motion.div>
           <div className="scroll-note">Scroll to discover <span/></div>
         </section>
@@ -108,7 +113,7 @@ export default function Home() {
 
       {view === "cart" && <CartPage key="cart" cart={cart} add={add} updateQuantity={setCartQuantity} openProduct={openProduct} shop={goCollection} checkout={() => go("checkout")}/>}
 
-      {view === "checkout" && <CheckoutPage cart={cart} backToCart={() => go("cart")} onPlaced={() => setCart([])}/>}
+      {view === "checkout" && <CheckoutPage cart={cart} backToCart={() => go("cart")} onPlaced={() => {setCart([]);void refreshWallet();}}/>}
       {view === "account" && <AccountPage shop={() => goCollection("All")} openProduct={openProduct}/>}
     </AnimatePresence>
 
@@ -301,8 +306,18 @@ function CheckoutPage({cart,backToCart,onPlaced}:{cart:Product[];backToCart:()=>
   const [message, setMessage] = useState("");
   const [wallet, setWallet] = useState(0);
   const [useWallet, setUseWallet] = useState(false);
-  const total = cart.reduce((sum, product) => sum + product.price, 0);
+  const [walletInput, setWalletInput] = useState("0");
+  const [checkoutKey, setCheckoutKey] = useState("");
+  const subtotal = cart.reduce((sum, product) => sum + product.price, 0);
+  const discount = 0;
+  const shipping = subtotal >= 1999 ? 0 : subtotal > 0 ? 99 : 0;
+  const total = subtotal - discount + shipping;
+  const availableWalletRupees = Math.floor(wallet / 100);
+  const maxWallet = Math.min(availableWalletRupees, total);
+  const walletApplied = useWallet ? Math.min(Math.max(0, Math.floor(Number(walletInput) || 0)), maxWallet) : 0;
   useEffect(() => { fetch("/api/account").then((response) => response.ok ? response.json() : null).then((data) => setWallet(data?.wallet?.approved ?? 0)).catch(() => {}); }, []);
+  useEffect(() => { queueMicrotask(() => setCheckoutKey(crypto.randomUUID())); }, []);
+  const toggleWallet = (checked:boolean) => { setUseWallet(checked); setWalletInput(checked ? String(maxWallet) : "0"); };
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!cart.length) { setStatus("error"); setMessage("Your bag is empty."); return; }
@@ -312,7 +327,7 @@ function CheckoutPage({cart,backToCart,onPlaced}:{cart:Product[];backToCart:()=>
     setStatus("loading");
     setMessage("");
     try {
-      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: form.get("email"), firstName: form.get("firstName"), lastName: form.get("lastName"), address: form.get("address"), city: form.get("city"), pinCode: form.get("pinCode"), walletAmount: useWallet ? Math.min(wallet, total) : 0, items: [...grouped].map(([productSlug, quantity]) => ({ productSlug, quantity, size: "M" })) }) });
+      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: form.get("email"), firstName: form.get("firstName"), lastName: form.get("lastName"), address: form.get("address"), city: form.get("city"), pinCode: form.get("pinCode"), checkoutKey: checkoutKey || crypto.randomUUID(), walletAmount: walletApplied, items: [...grouped].map(([productSlug, quantity]) => ({ productSlug, quantity, size: "M" })) }) });
       const result = await response.json().catch(() => ({})) as { orderId?: number; error?: string };
       if (!response.ok) throw new Error(result.error ?? "Unable to place your order.");
       setStatus("success");
@@ -322,7 +337,7 @@ function CheckoutPage({cart,backToCart,onPlaced}:{cart:Product[];backToCart:()=>
   };
   return <motion.div key="checkout" className="checkout" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
     <button className="back" onClick={backToCart}><ArrowLeft size={15}/> Return to bag</button><p>SECURE CHECKOUT</p><h1>{status === "success" ? "Order received." : "Finish your order"}</h1>
-    {status === "success" ? <div className="checkout-confirmation" role="status"><p>{message}</p><button className="primary" onClick={backToCart}>Continue shopping</button></div> : <div className="checkout-grid"><form onSubmit={submit}><label>Email address<input name="email" type="email" placeholder="you@example.com" required/></label><h3>Delivery</h3><div className="split"><label>First name<input name="firstName" required/></label><label>Last name<input name="lastName" required/></label></div><label>Address<input name="address" required/></label><div className="split"><label>City<input name="city" required/></label><label>PIN code<input name="pinCode" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required/></label></div>{wallet > 0 && <label className="wallet-check"><input type="checkbox" checked={useWallet} onChange={(event) => setUseWallet(event.target.checked)}/><span>Use wallet balance — ₹{Math.min(wallet, total).toLocaleString("en-IN")} available</span></label>}<button className="primary" disabled={status === "loading"}>{status === "loading" ? "Saving order…" : "Place order"}</button>{message && <small className="form-message error" role="alert">{message}</small>}</form><aside><h3>Your order</h3>{cart.map((product,index)=><div className="order-item" key={index}><img src={product.gallery[0].src} alt=""/><span>{product.name}<small>{product.color} / M</small></span><b>₹{product.price.toLocaleString("en-IN")}</b></div>)}{useWallet && <div className="total wallet-line"><span>Wallet</span><b>−₹{Math.min(wallet,total).toLocaleString("en-IN")}</b></div>}<div className="total"><span>Total</span><b>₹{Math.max(0,total-(useWallet?wallet:0)).toLocaleString("en-IN")}</b></div></aside></div>}
+    {status === "success" ? <div className="checkout-confirmation" role="status"><p>{message}</p><button className="primary" onClick={backToCart}>Continue shopping</button></div> : <div className="checkout-grid"><form onSubmit={submit}><label>Email address<input name="email" type="email" placeholder="you@example.com" required/></label><h3>Delivery</h3><div className="split"><label>First name<input name="firstName" required/></label><label>Last name<input name="lastName" required/></label></div><label>Address<input name="address" required/></label><div className="split"><label>City<input name="city" required/></label><label>PIN code<input name="pinCode" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} required/></label></div>{wallet > 0 && <div className="checkout-wallet"><label className="wallet-check"><input type="checkbox" checked={useWallet} onChange={(event) => toggleWallet(event.target.checked)}/><span><b>Use wallet credit</b><small>₹{availableWalletRupees.toLocaleString("en-IN")} available · Use at checkout</small></span></label>{useWallet&&<label>Amount to use<input type="number" inputMode="numeric" min={0} max={maxWallet} step={1} value={walletInput} onChange={(event)=>setWalletInput(event.target.value)} onBlur={()=>setWalletInput(String(walletApplied))}/><small>Maximum ₹{maxWallet.toLocaleString("en-IN")}</small></label>}</div>}<button className="primary" disabled={status === "loading"}>{status === "loading" ? "Saving order…" : "Place order"}</button>{message && <small className="form-message error" role="alert">{message}</small>}</form><aside><h3>Your order</h3>{cart.map((product,index)=><div className="order-item" key={index}><img src={product.gallery[0].src} alt=""/><span>{product.name}<small>{product.color} / M</small></span><b>₹{product.price.toLocaleString("en-IN")}</b></div>)}<div className="checkout-breakdown"><div><span>Subtotal</span><b>₹{subtotal.toLocaleString("en-IN")}</b></div><div><span>Discount</span><b>−₹{discount.toLocaleString("en-IN")}</b></div><div className="wallet-line"><span>Wallet Applied</span><b>−₹{walletApplied.toLocaleString("en-IN")}</b></div><div><span>Shipping</span><b>{shipping?`₹${shipping.toLocaleString("en-IN")}`:"Free"}</b></div><div className="final"><span>Final Amount</span><b>₹{Math.max(0,total-walletApplied).toLocaleString("en-IN")}</b></div></div></aside></div>}
   </motion.div>;
 }
 
@@ -351,7 +366,7 @@ function AccountPage({shop,openProduct}:{shop:()=>void;openProduct:(product:Prod
     const referral=new URLSearchParams(location.search).get("ref")||localStorage.getItem("pr-referral");
     if(referral){await fetch("/api/account",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({referralCode:referral})});localStorage.removeItem("pr-referral")}
   };
-  useEffect(()=>{const referral=new URLSearchParams(location.search).get("ref");if(referral)localStorage.setItem("pr-referral",referral);queueMicrotask(()=>void load())},[]);
+  useEffect(()=>{const params=new URLSearchParams(location.search);const referral=params.get("ref");if(referral)localStorage.setItem("pr-referral",referral);if(params.get("tab")==="wallet")queueMicrotask(()=>setTab("wallet"));queueMicrotask(()=>void load())},[]);
   const copyReferral=async()=>{if(!data)return;await navigator.clipboard.writeText(data.referralLink);setNotice("Referral link copied.");};
   const saveProfile=async(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const form=new FormData(event.currentTarget);const response=await fetch("/api/account",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.fromEntries(form))});setNotice(response.ok?"Profile updated.":"Unable to update profile.");if(response.ok)load()};
   const saveAddress=async(event:FormEvent<HTMLFormElement>)=>{event.preventDefault();const form=new FormData(event.currentTarget);const response=await fetch("/api/account/addresses",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...Object.fromEntries(form),isDefault:true})});setNotice(response.ok?"Address saved.":"Check the address details.");if(response.ok){event.currentTarget.reset();load()}};
