@@ -176,6 +176,66 @@
 @media(max-width:760px){.product-page .back{gap:0}.product-page .back svg{display:none}.lightbox{display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff;scroll-snap-type:y mandatory;overscroll-behavior:contain}.lightbox-close{position:fixed;top:14px;right:14px;background:rgba(255,255,255,.86);backdrop-filter:blur(10px);border-radius:999px}.lightbox-image{display:none}.lightbox-scroll-gallery{display:block;padding:0}.lightbox-scroll-frame{display:block;position:relative;width:100%;height:100svh;min-height:100svh;background:#f4f4f1;margin:0;overflow:hidden;scroll-snap-align:start;scroll-snap-stop:always}.lightbox-scroll-frame img{object-fit:contain}.lightbox-count{position:fixed;right:14px;bottom:14px;left:auto;transform:none;background:rgba(255,255,255,.92);padding:8px 10px;border:1px solid rgba(0,0,0,.08);box-shadow:0 10px 28px rgba(0,0,0,.08);z-index:3}}
 @media(max-width:420px){.lightbox-scroll-frame{height:100svh;min-height:100svh}.lightbox-count{right:10px;bottom:10px}}
 @media(max-width:760px){.mobile-count,.lightbox-count{display:none!important}}
+
+/* Compact editorial commerce cards */
+.product-card{position:relative}
+.card-wishlist{position:absolute;z-index:3;right:12px;top:12px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.94);display:grid;place-items:center;transition:transform .22s ease,background .22s ease}
+.card-wishlist:hover{transform:scale(1.07);background:#fff}
+.featured-products{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.core-products,.collection-products{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.featured-products .product-image,.core-products .product-image,.collection-products .product-image{aspect-ratio:4/5}
+.product-meta{padding:13px 2px 18px}
+.product-meta .quick{top:42px}
+.product-image span svg,.section-head button svg,.campaign-break button svg,.auth-primary svg{transition:transform .22s ease}
+.product-image:hover span svg,.section-head button:hover svg,.campaign-break button:hover svg,.auth-primary:hover svg{transform:translateX(4px)}
+
+/* Account, auth, wallet and referral */
+.auth-page{min-height:100svh;display:grid;grid-template-columns:1fr 1fr;background:#f5f4f0}
+.auth-page>div:first-child{padding:150px 8vw 80px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.auth-page p,.account-head p,.account-panel>p{font-size:9px;letter-spacing:.18em;text-transform:uppercase}
+.auth-page h1{font-size:clamp(52px,6vw,94px);line-height:.88;letter-spacing:-.07em;font-weight:430;margin:25px 0}
+.auth-page h1 em{font-family:Georgia,serif;font-weight:400}
+.auth-page>div>span{font-family:Georgia,serif;line-height:1.65;max-width:510px;color:#555;margin-bottom:38px}
+.auth-primary,.auth-secondary{width:min(100%,480px);height:54px;display:flex;align-items:center;justify-content:center;gap:18px;text-decoration:none;text-transform:uppercase;font-size:9px;letter-spacing:.13em}
+.auth-primary{background:#111;color:#fff}.auth-secondary{border:1px solid #111;color:#111;margin-top:9px}
+.forgot-link{font-size:10px;text-decoration:underline;text-underline-offset:5px;margin-top:20px}
+.auth-note{display:flex;align-items:center;gap:9px!important;color:#666;margin-top:32px!important}
+.auth-page small{margin-top:12px;color:#555;line-height:1.5}
+.auth-art{position:relative;min-height:100svh}.auth-art img{object-position:center top}
+.account-shell{min-height:100svh;padding:130px max(24px,6vw) 120px;background:#fafaf8}
+.account-loading{display:grid;place-items:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+.account-head{display:flex;justify-content:space-between;align-items:flex-end;max-width:1400px;margin:auto}
+.account-head h1{font-size:clamp(48px,6vw,88px);line-height:.9;letter-spacing:-.065em;font-weight:430;margin:18px 0 0}
+.account-head>a{display:flex;align-items:center;gap:9px;color:#111;font-size:10px;text-transform:uppercase;letter-spacing:.12em;text-decoration:none;border-bottom:1px solid;padding-bottom:7px}
+.account-tabs{max-width:1400px;margin:54px auto 32px;display:flex;gap:32px;border-bottom:1px solid #ddd}
+.account-tabs button{padding:0 0 14px;text-transform:uppercase;letter-spacing:.12em;font-size:9px;color:#777;border-bottom:1px solid transparent;margin-bottom:-1px}
+.account-tabs button.active{color:#111;border-color:#111}
+.account-notice{max-width:1400px;margin:0 auto 18px;padding:13px 16px;background:#efefe9;font-size:11px}
+.account-grid,.wallet-layout{max-width:1400px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.account-panel{background:#fff;border:1px solid #e3e3de;padding:30px}
+.account-panel>p{margin:0 0 28px}
+.profile-form label{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.1em}
+.profile-form input{display:block;width:100%;height:46px;border:0;border-bottom:1px solid #ddd;background:transparent;margin:4px 0 23px;outline:0}
+.profile-form .primary{margin-top:12px}
+.referral-card{background:#111;color:#fff;display:flex;flex-direction:column;justify-content:center}
+.referral-card h2{font-size:clamp(38px,4vw,62px);line-height:.95;letter-spacing:-.055em;font-weight:430;margin:8px 0 25px}
+.referral-card>span{font-family:Georgia,serif;line-height:1.7;color:#bbb;max-width:520px}
+.referral-card>div{margin-top:40px;border-top:1px solid #444;padding-top:22px;display:flex;justify-content:space-between;align-items:center}
+.referral-card code{font-size:15px;letter-spacing:.12em}.referral-card button{color:#fff;display:flex;gap:8px;align-items:center;font-size:10px}
+.account-list,.wishlist-grid{max-width:1400px;margin:auto}
+.account-list article{background:#fff;border-bottom:1px solid #e3e3de;padding:25px;display:flex;justify-content:space-between;gap:20px}
+.account-list p{font-size:9px;letter-spacing:.14em}.account-list h3{font-size:18px;font-weight:450;margin:8px 0}.account-list span{font-size:10px;color:#777;text-transform:capitalize}
+.wishlist-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.wishlist-grid article>button:first-child{position:relative;width:100%;aspect-ratio:4/5;background:#eee;overflow:hidden}
+.wishlist-grid article>button:first-child img{transition:transform .45s ease}.wishlist-grid article>button:first-child:hover img{transform:scale(1.025)}
+.wishlist-grid article>div{display:flex;justify-content:space-between;gap:12px;padding:13px 0;font-size:11px}.wishlist-grid article>button:last-child{font-size:9px;text-decoration:underline}
+.saved-address{display:flex;flex-direction:column;gap:8px;border-top:1px solid #eee;padding:18px 0;font-size:12px;line-height:1.6}.saved-address span{color:#666}
+.wallet-balances{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.wallet-balances>div{min-height:190px;background:#fff;border:1px solid #e3e3de;padding:24px;display:flex;flex-direction:column;justify-content:space-between}.wallet-balances .dark{background:#111;color:#fff}.wallet-balances span{font-size:9px;letter-spacing:.14em;text-transform:uppercase}.wallet-balances b{font-size:36px;font-weight:450}
+.ledger-row{display:flex;align-items:center;justify-content:space-between;gap:15px;border-top:1px solid #eee;padding:18px 0}.ledger-row span{display:flex;flex-direction:column;gap:6px}.ledger-row b{font-size:12px;font-weight:500}.ledger-row small{font-size:9px;color:#777;text-transform:capitalize}.ledger-row strong{color:#2f6b45}.ledger-row strong.debit{color:#a33232}
+.account-empty{padding:80px 0}.account-empty h2{font-size:40px;font-weight:430;letter-spacing:-.04em}.account-empty button{border-bottom:1px solid;padding-bottom:7px;display:flex;gap:15px}
+.wallet-check{display:flex!important;align-items:center;gap:12px;margin:8px 0 24px!important;text-transform:none!important;letter-spacing:0!important}.wallet-check input{width:18px!important;height:18px!important;margin:0!important}.wallet-line{color:#2f6b45}
+@media(max-width:1050px){.featured-products{grid-template-columns:repeat(3,1fr)}.core-products,.collection-products{grid-template-columns:repeat(3,1fr)}.wishlist-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){.featured-products,.core-products,.collection-products{grid-template-columns:repeat(2,1fr);gap:8px}.auth-page{display:block}.auth-page>div:first-child{min-height:100svh;padding:110px 22px 70px}.auth-art{display:none}.account-shell{padding:96px 14px 90px}.account-head{display:block}.account-head h1{font-size:48px}.account-head>a{margin-top:25px;width:max-content}.account-tabs{gap:22px;overflow-x:auto;margin-top:42px}.account-grid,.wallet-layout{display:block}.account-panel{padding:22px;margin-bottom:14px}.wallet-balances{margin-bottom:14px}.wallet-balances>div{min-height:130px;padding:16px}.wallet-balances b{font-size:24px}.wishlist-grid{grid-template-columns:repeat(2,1fr);gap:9px}.referral-card>div{display:block}.referral-card button{margin-top:18px}}
 :root{--color-black:#111;--color-white:#fff;--color-warm-white:#f5f4f0;--color-soft-grey:#e8e7e3;--color-border:#dad9d5;--color-muted:#686868;--color-error:#a33232;--color-success:#2f6b45;--ink:var(--color-black);--muted:var(--color-muted);--paper:var(--color-white);--off:var(--color-warm-white);--line:var(--color-border);--radius-image:8px;--radius-small:4px}
 body{overflow-x:hidden}
 :focus-visible{outline:1px solid currentColor;outline-offset:5px;border-radius:2px}
