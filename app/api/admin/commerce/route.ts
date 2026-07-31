@@ -20,7 +20,7 @@ async function requireAdmin(request: Request) {
   const user = await getChatGPTUser();
   if (user && isAdmin(user.email)) return user.email;
   const expected = process.env.P_AND_R_ADMIN_API_KEY;
-  const supplied = request.headers.get("authorization")?.replace(/^Bearer\s+/i,"");
+  const supplied = request.headers.get("x-pandr-admin-key") ?? request.headers.get("authorization")?.replace(/^Bearer\s+/i,"");
   const email = request.headers.get("x-admin-email");
   return expected && supplied === expected && email ? email : null;
 }

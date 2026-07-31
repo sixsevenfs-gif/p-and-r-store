@@ -6,7 +6,8 @@ async function authorized(request:Request) {
   const user=await getChatGPTUser();
   if(user&&isAdmin(user.email))return true;
   const expected=process.env.P_AND_R_ADMIN_API_KEY;
-  return Boolean(expected&&request.headers.get("authorization")===`Bearer ${expected}`&&request.headers.get("x-admin-email"));
+  const supplied=request.headers.get("x-pandr-admin-key")??request.headers.get("authorization")?.replace(/^Bearer\s+/i,"");
+  return Boolean(expected&&supplied===expected&&request.headers.get("x-admin-email"));
 }
 export async function POST(request:Request) {
   if(!(await authorized(request)))return Response.json({error:"Admin access required"},{status:403});
