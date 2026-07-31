@@ -108,22 +108,22 @@ export const products: Product[] = [
       {
         "key": "front",
         "label": "Front",
-        "src": "/products/dont-call-me-lucky-tee/front.png"
+        "src": "/products/dont-call-me-lucky-tee/front.jpg"
       },
       {
         "key": "back",
         "label": "Back",
-        "src": "/products/dont-call-me-lucky-tee/back.png"
+        "src": "/products/dont-call-me-lucky-tee/back.jpg"
       },
       {
         "key": "neck",
         "label": "Neck",
-        "src": "/products/dont-call-me-lucky-tee/neck.png"
+        "src": "/products/dont-call-me-lucky-tee/neck.jpg"
       },
       {
         "key": "flatlay",
         "label": "Flatlay",
-        "src": "/products/dont-call-me-lucky-tee/flatlay.png"
+        "src": "/products/dont-call-me-lucky-tee/flatlay.jpg"
       }
     ]
   },
@@ -201,22 +201,22 @@ export const products: Product[] = [
       {
         "key": "front",
         "label": "Front",
-        "src": "/products/fall-in-love-tee/front.png"
+        "src": "/products/fall-in-love-tee/front.jpg"
       },
       {
         "key": "back",
         "label": "Back",
-        "src": "/products/fall-in-love-tee/back.png"
+        "src": "/products/fall-in-love-tee/back.jpg"
       },
       {
         "key": "neck",
         "label": "Neck",
-        "src": "/products/fall-in-love-tee/neck.png"
+        "src": "/products/fall-in-love-tee/neck.jpg"
       },
       {
         "key": "flatlay",
         "label": "Flatlay",
-        "src": "/products/fall-in-love-tee/flatlay.png"
+        "src": "/products/fall-in-love-tee/flatlay.jpg"
       }
     ]
   },
@@ -511,22 +511,22 @@ export const products: Product[] = [
       {
         "key": "front",
         "label": "Front",
-        "src": "/products/need-money-for-porsche-tee/front.png"
+        "src": "/products/need-money-for-porsche-tee/front.jpg"
       },
       {
         "key": "back",
         "label": "Back",
-        "src": "/products/need-money-for-porsche-tee/back.png"
+        "src": "/products/need-money-for-porsche-tee/back.jpg"
       },
       {
         "key": "neck",
         "label": "Neck",
-        "src": "/products/need-money-for-porsche-tee/neck.png"
+        "src": "/products/need-money-for-porsche-tee/neck.jpg"
       },
       {
         "key": "flatlay",
         "label": "Flatlay",
-        "src": "/products/need-money-for-porsche-tee/flatlay.png"
+        "src": "/products/need-money-for-porsche-tee/flatlay.jpg"
       }
     ]
   },
@@ -604,22 +604,22 @@ export const products: Product[] = [
       {
         "key": "front",
         "label": "Front",
-        "src": "/products/pre-rich-tee/front.png"
+        "src": "/products/pre-rich-tee/front.jpg"
       },
       {
         "key": "back",
         "label": "Back",
-        "src": "/products/pre-rich-tee/back.png"
+        "src": "/products/pre-rich-tee/back.jpg"
       },
       {
         "key": "neck",
         "label": "Neck",
-        "src": "/products/pre-rich-tee/neck.png"
+        "src": "/products/pre-rich-tee/neck.jpg"
       },
       {
         "key": "flatlay",
         "label": "Flatlay",
-        "src": "/products/pre-rich-tee/flatlay.png"
+        "src": "/products/pre-rich-tee/flatlay.jpg"
       }
     ]
   },
