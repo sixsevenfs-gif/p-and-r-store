@@ -21,7 +21,7 @@ const featuredDropProducts = [
 });
 
 export default function Home() {
-  const [view, setView] = useState<View>(() => typeof window === "undefined" ? "home" : viewFromPath(location.pathname));
+  const [view, setView] = useState<View>("home");
   const [selected, setSelected] = useState(products[0]);
   const [cart, setCart] = useState<Product[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -34,7 +34,7 @@ export default function Home() {
   const heroOpacity = useTransform(scrollYProgress, [0, .13], [1, 0]);
 
   useEffect(() => { const onScroll = () => setNavSolid(window.scrollY > 60 || view !== "home"); onScroll(); addEventListener("scroll", onScroll); return () => removeEventListener("scroll", onScroll); }, [view]);
-  useEffect(() => { const onPop = () => setView(viewFromPath(location.pathname)); addEventListener("popstate", onPop); return () => removeEventListener("popstate", onPop); }, []);
+  useEffect(() => { queueMicrotask(() => setView(viewFromPath(location.pathname))); const onPop = () => setView(viewFromPath(location.pathname)); addEventListener("popstate", onPop); return () => removeEventListener("popstate", onPop); }, []);
   useEffect(() => { const saved = localStorage.getItem("pr-bag"); if (saved) { try { const slugs = JSON.parse(saved) as string[]; queueMicrotask(() => setCart(slugs.flatMap(slug => products.filter(p => p.slug === slug)))); } catch {} } }, []);
   useEffect(() => { const code = new URLSearchParams(location.search).get("ref"); if (code) localStorage.setItem("pr-referral", code); }, []);
   useEffect(() => { localStorage.setItem("pr-bag", JSON.stringify(cart.map(p => p.slug))); }, [cart]);

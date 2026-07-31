@@ -4,9 +4,9 @@
   "color": "White / Burgundy Back Print",
   "note": "Oversized white T-shirt with a clean plain front, burgundy back graphic, ribbed neck and relaxed premium drape.",
   "images": [
-    { "file": "front.png", "label": "Front" },
-    { "file": "back.png", "label": "Back Print" },
-    { "file": "closeup-fabric.png", "label": "Print Detail" },
-    { "file": "neck.png", "label": "Neck" }
+    { "file": "front.jpg", "label": "Front" },
+    { "file": "back.jpg", "label": "Back Print" },
+    { "file": "closeup-fabric.jpg", "label": "Print Detail" },
+    { "file": "neck.jpg", "label": "Neck" }
   ]
 }

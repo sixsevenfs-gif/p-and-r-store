@@ -6,19 +6,19 @@
   "note": "Women's white oversized T-shirt with a plain front, handwritten black back print, soft ribbed neck and relaxed everyday drape.",
   "images": [
     {
-      "file": "front.png",
+      "file": "front.jpg",
       "label": "Front"
     },
     {
-      "file": "back.png",
+      "file": "back.jpg",
       "label": "Back Print"
     },
     {
-      "file": "neck.png",
+      "file": "neck.jpg",
       "label": "Neck"
     },
     {
-      "file": "flatlay.png",
+      "file": "flatlay.jpg",
       "label": "Flatlay"
     }
   ]

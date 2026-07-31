@@ -4,9 +4,9 @@
   "color": "White / Red Print",
   "note": "Oversized white T-shirt with a bold red front graphic, clean back, ribbed neck and premium everyday drape.",
   "images": [
-    { "file": "front.png", "label": "Front Print" },
-    { "file": "back.png", "label": "Back" },
-    { "file": "closeup-fabric.png", "label": "Print Detail" },
-    { "file": "neck.png", "label": "Neck" }
+    { "file": "front.jpg", "label": "Front Print" },
+    { "file": "back.jpg", "label": "Back" },
+    { "file": "closeup-fabric.jpg", "label": "Print Detail" },
+    { "file": "neck.jpg", "label": "Neck" }
   ]
 }

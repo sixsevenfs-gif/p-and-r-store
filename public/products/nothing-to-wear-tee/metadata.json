@@ -4,9 +4,9 @@
   "color": "Sand / Burgundy Print",
   "note": "Oversized sand T-shirt with a burgundy serif front print, clean back, ribbed neck and relaxed premium drape.",
   "images": [
-    { "file": "front.png", "label": "Front Print" },
-    { "file": "back.png", "label": "Back" },
-    { "file": "closeup-fabric.png", "label": "Print Detail" },
-    { "file": "neck.png", "label": "Neck" }
+    { "file": "front.jpg", "label": "Front Print" },
+    { "file": "back.jpg", "label": "Back" },
+    { "file": "closeup-fabric.jpg", "label": "Print Detail" },
+    { "file": "neck.jpg", "label": "Neck" }
   ]
 }

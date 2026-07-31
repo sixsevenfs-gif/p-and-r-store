@@ -5,9 +5,9 @@
   "category": "Women",
   "note": "Women's white baby tee with a burgundy serif chest print, clean back, ribbed neck and fitted everyday drape.",
   "images": [
-    { "file": "front.png", "label": "Front Print" },
-    { "file": "back.png", "label": "Back" },
-    { "file": "flatlay.png", "label": "Flatlay" },
-    { "file": "closeup-fabric.png", "label": "Print Detail" }
+    { "file": "front.jpg", "label": "Front Print" },
+    { "file": "back.jpg", "label": "Back" },
+    { "file": "flatlay.jpg", "label": "Flatlay" },
+    { "file": "closeup-fabric.jpg", "label": "Print Detail" }
   ]
 }
