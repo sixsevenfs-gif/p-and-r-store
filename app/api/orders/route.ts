@@ -4,6 +4,7 @@ import { customers, orderItems, orders, walletLedger } from "../../../db/schema"
 import { products } from "../../product-data";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { requireApiCustomer } from "../_lib/account";
+import { env } from "cloudflare:workers";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const validSizes = new Set(["XS", "S", "M", "L", "XL"]);
@@ -120,15 +121,26 @@ export async function POST(request: Request) {
       size: item.size!,
     })));
     if (walletAmount) {
-      await db.insert(walletLedger).values({
-        customerId: customer.id,
-        orderId: order.id,
-        amount: -(walletAmount * 100),
-        type: "debit",
-        status: "used",
-        note: `Applied to order #${order.id}`,
-        idempotencyKey: `order:${order.id}:wallet`,
-      });
+      const walletPaise = walletAmount * 100;
+      const debit = await env.DB.prepare(`
+        INSERT INTO wallet_ledger
+          (customer_id, order_id, amount, type, status, note, idempotency_key, created_at)
+        SELECT ?, ?, ?, 'debit', 'used', ?, ?, unixepoch()
+        WHERE COALESCE((
+          SELECT SUM(amount) FROM wallet_ledger
+          WHERE customer_id = ? AND status IN ('available', 'used')
+        ), 0) >= ?
+        ON CONFLICT(idempotency_key) DO NOTHING
+      `).bind(
+        customer.id,
+        order.id,
+        -walletPaise,
+        `Applied to order #${order.id}`,
+        `order:${order.id}:wallet`,
+        customer.id,
+        walletPaise,
+      ).run();
+      if (Number(debit.meta.changes ?? 0) !== 1) throw new Error("Wallet balance changed. Review your available credit and try again.");
       debitedWalletPaise = walletAmount * 100;
     }
     await db.update(orders).set({ status: "pending" }).where(and(eq(orders.id, order.id), eq(orders.status, "creating")));

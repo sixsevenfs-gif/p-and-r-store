@@ -177,6 +177,27 @@
 @media(max-width:420px){.lightbox-scroll-frame{height:100svh;min-height:100svh}.lightbox-count{right:10px;bottom:10px}}
 @media(max-width:760px){.mobile-count,.lightbox-count{display:none!important}}
 
+.nav-right{gap:18px!important}
+.header-wallet{gap:8px!important;padding:4px 0}
+.header-wallet>span{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1}
+.header-wallet b{font-size:10px;font-weight:550;letter-spacing:.02em;white-space:nowrap}
+.header-wallet small{font-size:7px;letter-spacing:.08em;text-transform:uppercase;opacity:.65;white-space:nowrap}
+.checkout-wallet{margin:8px 0 26px;padding:18px;border:1px solid var(--line);background:var(--off)}
+.checkout-wallet .wallet-check{margin:0!important}
+.checkout-wallet .wallet-check span{display:flex;flex-direction:column;gap:5px}
+.checkout-wallet .wallet-check b{font-size:10px;font-weight:550}
+.checkout-wallet .wallet-check small{font-size:9px;color:var(--muted);text-transform:none;letter-spacing:0}
+.checkout-wallet>label:last-child{display:block;margin-top:18px}
+.checkout-wallet>label:last-child input{margin-bottom:6px;background:transparent}
+.checkout-wallet>label:last-child small{display:block;color:var(--muted);font-size:9px;text-transform:none;letter-spacing:0}
+.checkout-breakdown{border-top:1px solid var(--line);margin-top:22px;padding-top:12px}
+.checkout-breakdown>div{display:flex;justify-content:space-between;gap:20px;padding:9px 0;font-size:11px}
+.checkout-breakdown b{font-weight:500}
+.checkout-breakdown .final{border-top:1px solid var(--line);margin-top:8px;padding-top:18px;font-size:15px}
+.checkout-breakdown .final b{font-size:19px}
+@media(max-width:980px){.header-wallet small{display:none}}
+@media(max-width:760px){.header-wallet{display:none!important}}
+
 /* Compact editorial commerce cards */
 .product-card{position:relative}
 .card-wishlist{position:absolute;z-index:3;right:12px;top:12px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.94);display:grid;place-items:center;transition:transform .22s ease,background .22s ease}

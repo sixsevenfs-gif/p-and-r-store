@@ -28,6 +28,10 @@ export const newsletterSubscribers = sqliteTable("newsletter_subscribers", {
 export const orders = sqliteTable("orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   customerId: integer("customer_id").notNull().references(() => customers.id),
+  checkoutKey: text("checkout_key").unique(),
+  subtotalAmount: integer("subtotal_amount").notNull().default(0),
+  discountAmount: integer("discount_amount").notNull().default(0),
+  shippingAmount: integer("shipping_amount").notNull().default(0),
   totalAmount: integer("total_amount").notNull(),
   walletAmount: integer("wallet_amount").notNull().default(0),
   payableAmount: integer("payable_amount").notNull(),

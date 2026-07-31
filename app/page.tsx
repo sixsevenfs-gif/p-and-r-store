@@ -316,7 +316,15 @@ function CheckoutPage({cart,backToCart,onPlaced}:{cart:Product[];backToCart:()=>
   const maxWallet = Math.min(availableWalletRupees, total);
   const walletApplied = useWallet ? Math.min(Math.max(0, Math.floor(Number(walletInput) || 0)), maxWallet) : 0;
   useEffect(() => { fetch("/api/account").then((response) => response.ok ? response.json() : null).then((data) => setWallet(data?.wallet?.approved ?? 0)).catch(() => {}); }, []);
-  useEffect(() => { queueMicrotask(() => setCheckoutKey(crypto.randomUUID())); }, []);
+  useEffect(() => {
+    const fingerprint = JSON.stringify(cart.map((product) => product.slug).sort());
+    try {
+      const saved = JSON.parse(sessionStorage.getItem("pr-checkout-session") ?? "null") as {fingerprint?:string;key?:string}|null;
+      const key = saved?.fingerprint === fingerprint && saved.key ? saved.key : crypto.randomUUID();
+      sessionStorage.setItem("pr-checkout-session", JSON.stringify({ fingerprint, key }));
+      queueMicrotask(() => setCheckoutKey(key));
+    } catch { queueMicrotask(() => setCheckoutKey(crypto.randomUUID())); }
+  }, [cart]);
   const toggleWallet = (checked:boolean) => { setUseWallet(checked); setWalletInput(checked ? String(maxWallet) : "0"); };
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -332,6 +340,7 @@ function CheckoutPage({cart,backToCart,onPlaced}:{cart:Product[];backToCart:()=>
       if (!response.ok) throw new Error(result.error ?? "Unable to place your order.");
       setStatus("success");
       setMessage(`Order #${result.orderId} is confirmed. We’ll email you shortly.`);
+      sessionStorage.removeItem("pr-checkout-session");
       onPlaced();
     } catch (error) { setStatus("error"); setMessage(error instanceof Error ? error.message : "Unable to place your order."); }
   };

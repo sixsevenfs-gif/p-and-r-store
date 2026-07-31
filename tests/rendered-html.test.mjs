@@ -35,15 +35,34 @@ test("persists referral and wallet state in relational records", async () => {
 });
 
 test("protects customer and admin APIs with server-side identity", async () => {
-  const [account, wishlist, addresses, admin] = await Promise.all([
+  const [account, wishlist, addresses, admin, wallet] = await Promise.all([
     read("../app/api/account/route.ts"),
     read("../app/api/account/wishlist/route.ts"),
     read("../app/api/account/addresses/route.ts"),
     read("../app/api/admin/referrals/route.ts"),
+    read("../app/api/wallet/route.ts"),
   ]);
   assert.match(account, /requireApiCustomer/);
   assert.match(wishlist, /requireApiCustomer/);
   assert.match(addresses, /requireApiCustomer/);
   assert.match(admin, /isAdmin/);
   assert.match(admin, /Admin access required/);
+  assert.match(wallet, /requireApiCustomer/);
+  assert.match(wallet, /recentTransactions/);
+});
+
+test("keeps wallet checkout bounded and idempotent", async () => {
+  const [page, orders, migration] = await Promise.all([
+    read("../app/page.tsx"),
+    read("../app/api/orders/route.ts"),
+    read("../drizzle/0003_glossy_eternity.sql"),
+  ]);
+  assert.match(page, /Wallet Applied/);
+  assert.match(page, /Amount to use/);
+  assert.match(page, /pr-checkout-session/);
+  assert.match(orders, /checkoutKey/);
+  assert.match(orders, /ON CONFLICT\(idempotency_key\) DO NOTHING/);
+  assert.match(orders, /balanceRupees/);
+  assert.match(orders, /walletAmount \* 100/);
+  assert.match(migration, /orders_checkout_key_unique/);
 });
