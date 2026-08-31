@@ -377,17 +377,35 @@ CREATE INDEX IF NOT EXISTS order_timeline_order_idx ON order_timeline(order_id,c
 
 -- Commerce is accessed only by the trusted Next.js server through DATABASE_URL.
 -- Enabling RLS without public policies blocks anon/authenticated Data API access.
-do $$
-declare table_name text;
-begin
-  foreach table_name in array array[
-    'customers','newsletter_subscribers','orders','order_items','addresses','referral_config',
-    'referrals','wallet_ledger','wishlists','products','product_variants','product_images',
-    'inventory_movements','categories','collections','returns','discounts','payouts',
-    'content_sections','store_settings','order_notes','audit_logs','admin_roles','carts',
-    'cart_items','payments','coupons','coupon_usages','order_status_history','reviews',
-    'customer_notes','order_timeline'
-  ] loop
-    execute format('alter table public.%I enable row level security', table_name);
-  end loop;
-end $$;
+alter table public.customers enable row level security;
+alter table public.newsletter_subscribers enable row level security;
+alter table public.orders enable row level security;
+alter table public.order_items enable row level security;
+alter table public.addresses enable row level security;
+alter table public.referral_config enable row level security;
+alter table public.referrals enable row level security;
+alter table public.wallet_ledger enable row level security;
+alter table public.wishlists enable row level security;
+alter table public.products enable row level security;
+alter table public.product_variants enable row level security;
+alter table public.product_images enable row level security;
+alter table public.inventory_movements enable row level security;
+alter table public.categories enable row level security;
+alter table public.collections enable row level security;
+alter table public.returns enable row level security;
+alter table public.discounts enable row level security;
+alter table public.payouts enable row level security;
+alter table public.content_sections enable row level security;
+alter table public.store_settings enable row level security;
+alter table public.order_notes enable row level security;
+alter table public.audit_logs enable row level security;
+alter table public.admin_roles enable row level security;
+alter table public.carts enable row level security;
+alter table public.cart_items enable row level security;
+alter table public.payments enable row level security;
+alter table public.coupons enable row level security;
+alter table public.coupon_usages enable row level security;
+alter table public.order_status_history enable row level security;
+alter table public.reviews enable row level security;
+alter table public.customer_notes enable row level security;
+alter table public.order_timeline enable row level security;
