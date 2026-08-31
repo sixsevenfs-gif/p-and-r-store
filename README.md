@@ -1,98 +1,70 @@
-# vinext-starter
+# P&R commerce storefront
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+P&R is a React/Next-compatible Vinext storefront that runs on Cloudflare
+Workers with Cloudflare D1 for commerce and authentication data, and R2 for
+media. Product prices, orders, coupons and payments use paise in D1.
 
-## Prerequisites
-
-- Node.js `>=22.13.0`
-
-## Quick Start
+## Local development
 
 ```bash
 npm install
+npm run db:migrate:local
 npm run dev
-npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+Run the normal checks with:
 
-## Included Shape
-
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
-
-## Workspace Auth Headers
-
-OpenAI workspace sites can read the current user's email from
-`oai-authenticated-user-email`.
-
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
-
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```bash
+npm run lint
+npm test
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+## Authentication
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+Customer registration and login use `/register` and `/login`. Better Auth
+stores password hashes, accounts and server-side sessions in D1. Browser
+sessions use HttpOnly, SameSite cookies; secure cookies are enabled in
+production. Better Auth's origin/CSRF checks remain enabled, and sign-up/sign-in
+are database rate-limited.
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+`/account` requires an authenticated session. Guest checkout remains public.
+The customer record is linked to Better Auth through `customers.auth_user_id`.
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+Administrator access uses the existing `admin_roles` table. `/admin` pages and
+`/api/admin/*` endpoints validate the session and an active `ADMIN` or
+`SUPER_ADMIN` role server-side. `ADMIN_EMAILS` is never used as a runtime access
+bypass.
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+### First local administrator
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+Set a single initial email in `ADMIN_EMAILS`, a high-entropy `BETTER_AUTH_SECRET`,
+the local `BETTER_AUTH_URL`, and a temporary `ADMIN_BOOTSTRAP_TOKEN`. Start the
+app, choose the administrator password locally, and run:
 
-## Useful Commands
+```bash
+read -s ADMIN_PASSWORD
+printf '%s' "$ADMIN_PASSWORD" | ADMIN_BOOTSTRAP_TOKEN="$ADMIN_BOOTSTRAP_TOKEN" AUTH_BOOTSTRAP_URL=http://localhost:3000 npm run auth:bootstrap-admin
+unset ADMIN_PASSWORD ADMIN_BOOTSTRAP_TOKEN
+```
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+The endpoint is unavailable in production and delegates password hashing to
+Better Auth. It creates a D1 `SUPER_ADMIN` role. Sign in at `/admin/login`.
 
-## Learn More
+## Configuration
 
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+Copy `.env.example` to `.env.local`. Required production values:
+
+- `BETTER_AUTH_SECRET`
+- `BETTER_AUTH_URL`
+- `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, and `RAZORPAY_WEBHOOK_SECRET` when online payments are enabled
+
+Google login becomes available only when both `GOOGLE_CLIENT_ID` and
+`GOOGLE_CLIENT_SECRET` are configured. The Worker requires the `DB` D1 and
+`MEDIA` R2 bindings declared in `.openai/hosting.json`.
+
+## Deployment preparation
+
+Use Cloudflare Workers for the existing Vinext runtime. Before any production
+deployment, replace the placeholder D1 configuration in `wrangler.d1.jsonc`,
+apply migrations to a staging D1 database, configure Worker secrets, and test
+the Razorpay webhook on the public HTTPS origin.

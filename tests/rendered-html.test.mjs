@@ -8,12 +8,12 @@ test("keeps the premium hero and exposes the complete account surface", async ()
   const page = await read("../app/page.tsx");
   assert.match(page, /className="hero"/);
   assert.match(page, /Oversized<br\/>Essentials/);
-  assert.match(page, /Continue with Google or email/);
-  assert.match(page, /Forgot password/);
+  assert.match(page, /Create account/);
+  assert.match(page, /\/login\?next=/);
   assert.match(page, /Profile updated/);
   assert.match(page, /SAVED ADDRESSES/);
   assert.match(page, /TRANSACTION HISTORY/);
-  assert.match(page, /signout-with-chatgpt/);
+  assert.match(page, /api\/auth\/sign-out/);
 });
 
 test("persists referral and wallet state in relational records", async () => {
@@ -45,7 +45,6 @@ test("protects customer and admin APIs with server-side identity", async () => {
   assert.match(account, /requireApiCustomer/);
   assert.match(wishlist, /requireApiCustomer/);
   assert.match(addresses, /requireApiCustomer/);
-  assert.match(admin, /isAdmin/);
   assert.match(admin, /Admin access required/);
   assert.match(wallet, /requireApiCustomer/);
   assert.match(wallet, /recentTransactions/);

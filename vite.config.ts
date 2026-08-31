@@ -1,5 +1,5 @@
 import vinext from "vinext";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import hostingConfig from "./.openai/hosting.json";
 import { sites } from "./build/sites-vite-plugin";
 
@@ -11,9 +11,22 @@ const { d1, r2 } = hostingConfig;
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
-const localBindingConfig = {
+function localBindingConfig(mode: string) {
+  const localEnv = loadEnv(mode, process.cwd(), "");
+  const vars = Object.fromEntries(Object.entries({
+    BETTER_AUTH_SECRET: localEnv.BETTER_AUTH_SECRET,
+    BETTER_AUTH_URL: localEnv.BETTER_AUTH_URL,
+    GOOGLE_CLIENT_ID: localEnv.GOOGLE_CLIENT_ID,
+    GOOGLE_CLIENT_SECRET: localEnv.GOOGLE_CLIENT_SECRET,
+    ADMIN_EMAILS: localEnv.ADMIN_EMAILS,
+    ADMIN_BOOTSTRAP_TOKEN: localEnv.ADMIN_BOOTSTRAP_TOKEN,
+    P_AND_R_ADMIN_API_KEY: localEnv.P_AND_R_ADMIN_API_KEY,
+    NODE_ENV: mode === "production" ? "production" : "development",
+  }).filter(([, value]) => typeof value === "string" && value.length > 0));
+  return {
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
+  vars,
   d1_databases: d1
     ? [
         {
@@ -31,9 +44,10 @@ const localBindingConfig = {
         },
       ]
     : [],
-};
+  };
+}
 
-export default defineConfig(async () => {
+export default defineConfig(async ({ mode }) => {
   // Keep Wrangler and Miniflare state project-local. These are non-secret tool
   // settings; application environment belongs in ignored `.env*` files.
   process.env.WRANGLER_WRITE_LOGS ??= "false";
@@ -52,7 +66,7 @@ export default defineConfig(async () => {
       sites(),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
-        config: localBindingConfig,
+        config: localBindingConfig(mode),
       }),
     ],
   };

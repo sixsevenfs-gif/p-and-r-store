@@ -1,13 +1,8 @@
 import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { customers, orders, referralConfig, referrals, walletLedger } from "../../../../db/schema";
-import { getChatGPTUser } from "../../../chatgpt-auth";
-import { ensureReferralConfig, isAdmin } from "../../_lib/account";
-
-async function requireAdmin() {
-  const user = await getChatGPTUser();
-  return user && isAdmin(user.email) ? user : null;
-}
+import { ensureReferralConfig } from "../../_lib/account";
+import { requireAdmin } from "../../_lib/admin";
 
 export async function GET() {
   const admin = await requireAdmin();

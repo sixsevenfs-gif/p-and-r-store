@@ -1,28 +1,39 @@
 import { and, eq, sql } from "drizzle-orm";
-import { getChatGPTUser } from "../../chatgpt-auth";
 import { getDb } from "../../../db";
 import { customers, referralConfig, referrals } from "../../../db/schema";
+import { getAuthSession } from "../../auth";
 
 export function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-export async function requireApiCustomer() {
-  const identity = await getChatGPTUser();
-  if (!identity) return null;
-  const email = normalizeEmail(identity.email);
+export async function requireApiCustomer(request?: Request) {
+  const session = await getAuthSession(request);
+  if (!session?.user) return null;
+  const email = normalizeEmail(session.user.email);
   const db = getDb();
-  let customer = await db.select().from(customers).where(eq(customers.email, email)).get();
+  let customer = await db.select().from(customers).where(eq(customers.authUserId, session.user.id)).get();
+  if (!customer) customer = await db.select().from(customers).where(eq(customers.email, email)).get();
   if (!customer) {
-    const names = (identity.fullName ?? "").trim().split(/\s+/);
+    const names = session.user.name.trim().split(/\s+/);
     const referralCode = await uniqueReferralCode(email);
     await db.insert(customers).values({
+      authUserId: session.user.id,
       email,
       firstName: names[0] || "P&R",
       lastName: names.slice(1).join(" ") || "Member",
+      address: "",
+      city: "",
+      pinCode: "",
+      authProvider: "better-auth",
       referralCode,
     });
-    customer = await db.select().from(customers).where(eq(customers.email, email)).get();
+    customer = await db.select().from(customers).where(eq(customers.authUserId, session.user.id)).get();
+  } else if (customer.authUserId !== session.user.id) {
+    // Existing guest customers are linked only after they authenticate with
+    // the same verified Better Auth email address.
+    await db.update(customers).set({ authUserId: session.user.id, authProvider: "better-auth", updatedAt: new Date() }).where(eq(customers.id, customer.id));
+    customer = await db.select().from(customers).where(eq(customers.id, customer.id)).get();
   }
   return customer ?? null;
 }
@@ -49,11 +60,6 @@ export async function ensureReferralConfig() {
   const db = getDb();
   await db.insert(referralConfig).values({ id: 1 }).onConflictDoNothing();
   return (await db.select().from(referralConfig).where(eq(referralConfig.id, 1)).get())!;
-}
-
-export function isAdmin(email: string) {
-  const allowed = (process.env.ADMIN_EMAILS ?? "").split(",").map(normalizeEmail).filter(Boolean);
-  return allowed.includes(normalizeEmail(email));
 }
 
 async function uniqueReferralCode(email: string) {
