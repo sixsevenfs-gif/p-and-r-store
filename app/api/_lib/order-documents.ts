@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/db/runtime";
 
 type DocumentKind = "invoice" | "summary" | "packing-slip" | "shipping-label";
 type Row = Record<string, unknown>;

@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/db/runtime";
 import { requireAdmin } from "../../_lib/admin";
 
 const term = (value: string) => `%${value.trim().slice(0, 80)}%`;

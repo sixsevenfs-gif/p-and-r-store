@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/db/runtime";
 import { requireAdmin } from "../../_lib/admin";
 
 type VariantInput = { id?: unknown; size?: unknown; color?: unknown; sku?: unknown; price?: unknown; stock?: unknown; lowStockThreshold?: unknown; active?: unknown };
@@ -6,7 +6,7 @@ type ImageInput = { url?: unknown; altText?: unknown; sortOrder?: unknown };
 type ProductInput = Record<string, unknown> & { variants?: unknown; images?: unknown };
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const text = (value: unknown, max: number) => String(value ?? "").trim().slice(0, max);
-const paise = (value: unknown, nullable = false) => { if (value === "" || value == null) return nullable ? null : NaN; const number = Math.round(Number(value) * 100); return Number.isSafeInteger(number) && number >= 0 ? number : NaN; };
+const paise = (value: unknown, nullable = false): number | null => { if (value === "" || value == null) return nullable ? null : NaN; const number = Math.round(Number(value) * 100); return Number.isSafeInteger(number) && number >= 0 ? number : NaN; };
 
 function cleanProduct(raw: ProductInput) {
   const name = text(raw.name, 160), slug = text(raw.slug, 160).toLowerCase(), category = text(raw.category, 80), color = text(raw.color, 80) || "Mixed", sku = text(raw.sku, 80);
@@ -15,7 +15,7 @@ function cleanProduct(raw: ProductInput) {
   const variants = Array.isArray(raw.variants) ? raw.variants as VariantInput[] : [];
   const images = Array.isArray(raw.images) ? raw.images as ImageInput[] : [];
   if (!name || !slugPattern.test(slug) || !category || !sku || !Number.isFinite(price) || !["draft", "published", "archived"].includes(status) || !["men", "women", "unisex"].includes(audience)) throw new Error("Enter a title, valid slug, category, SKU, price, audience and status.");
-  if (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < price)) throw new Error("Compare-at price must be greater than or equal to the selling price.");
+  if (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < Number(price))) throw new Error("Compare-at price must be greater than or equal to the selling price.");
   if (costPrice !== null && !Number.isFinite(costPrice)) throw new Error("Cost price is invalid.");
   if (!variants.length || variants.length > 100) throw new Error("Add between 1 and 100 variants.");
   const variantKeys = new Set<string>();

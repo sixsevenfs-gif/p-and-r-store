@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/db/runtime";
 import { products as seedProducts } from "../../product-data";
 
 export type CatalogFilters = {

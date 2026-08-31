@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/db/runtime";
 
 export async function GET() {
   const rows = await env.DB.prepare("SELECT * FROM content_sections WHERE status='published' ORDER BY sort_order").all();

@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/db/runtime";
 import { requireAdmin } from "../../_lib/admin";
 
 const clean = (value: unknown, max = 300) => String(value ?? "").trim().slice(0, max);
