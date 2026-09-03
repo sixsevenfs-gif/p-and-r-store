@@ -1,16 +1,16 @@
 import { env } from "@/db/runtime";
-import { getAuthSession } from "../../../auth";
+import { requireApiCustomer } from "../../_lib/account";
 
 type Secrets = { RAZORPAY_KEY_ID?: string; RAZORPAY_KEY_SECRET?: string };
 const secrets = () => env as unknown as Secrets;
 
 export async function POST(request: Request) {
-  const session = await getAuthSession(request);
-  if (!session?.user) return Response.json({ error: "Sign in is required for online payment." }, { status: 401 });
+  const customer = await requireApiCustomer(request);
+  if (!customer) return Response.json({ error: "Sign in is required for online payment." }, { status: 401 });
   const { orderId } = await request.json() as { orderId?: number };
   if (!Number.isInteger(orderId)) return Response.json({ error: "Invalid order." }, { status: 400 });
-  const order = await env.DB.prepare(`SELECT o.*,c.email FROM orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=?`).bind(orderId).first<Record<string, unknown>>();
-  if (!order || String(order.email).toLowerCase() !== session.user.email.trim().toLowerCase()) return Response.json({ error: "Order not found." }, { status: 404 });
+  const order = await env.DB.prepare("SELECT * FROM orders WHERE id=? AND customer_id=?").bind(orderId, customer.id).first<Record<string, unknown>>();
+  if (!order) return Response.json({ error: "Order not found." }, { status: 404 });
   if (order.payment_method !== "razorpay" || order.payment_status !== "pending") return Response.json({ error: "This order cannot be paid online." }, { status: 409 });
   if (!secrets().RAZORPAY_KEY_ID || !secrets().RAZORPAY_KEY_SECRET) return Response.json({ error: "Online payments are not configured." }, { status: 503 });
   const response = await fetch("https://api.razorpay.com/v1/orders", {

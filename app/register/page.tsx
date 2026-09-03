@@ -8,5 +8,5 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const { next } = await searchParams;
   const nextPath = safeReturnPath(next, "/account");
   if (await getAuthSession()) redirect(nextPath);
-  return <main className="auth-screen"><section><p>P&R MEMBERS</p><h1>Create your account.</h1><span>Use your name and mobile number. We’ll verify it with a one-time SMS code.</span><PhoneAuthForm mode="register" nextPath={nextPath} /><a className="auth-secondary" href={`/login?next=${encodeURIComponent(nextPath)}`}>Already have an account? Sign in</a></section></main>;
+  return <main className="auth-screen"><section><p>P&R MEMBERS</p><h1>Create your account.</h1><span>Use your name and mobile number—no email, password or OTP needed.</span><PhoneAuthForm mode="register" nextPath={nextPath} /><a className="auth-secondary" href={`/login?next=${encodeURIComponent(nextPath)}`}>Already have an account? Sign in</a></section></main>;
 }

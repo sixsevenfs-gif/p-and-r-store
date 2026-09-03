@@ -9,7 +9,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ all
 
   if (action === "sign-out") {
     const { error } = await supabase.auth.signOut();
-    return error ? Response.json({ message: error.message }, { status: 400 }) : Response.json({ ok: true });
+    const response = error ? Response.json({ message: error.message }, { status: 400 }) : Response.json({ ok: true });
+    response.headers.append("Set-Cookie", "pr_member=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax");
+    return response;
   }
 
   const body = await request.json().catch(() => ({})) as Record<string, unknown>;
