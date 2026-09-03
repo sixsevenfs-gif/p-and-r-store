@@ -12,7 +12,7 @@ const products = seedProducts;
 const fade = { initial: { opacity: 0, y: 28 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: "-10%" }, transition: { duration: .8, ease: [0.22, 1, 0.36, 1] as const } };
 type ContentSection = {section_key:string;section_type?:string;title?:string;subtitle?:string;body?:string;image_url?:string;cta_label?:string;cta_url?:string;sort_order?:number};
 const aboutDefaults: ContentSection[] = [
-  {section_key:"about_hero",section_type:"hero",title:"Considered essentials.",subtitle:"Built around proportion, weight and repetition.",image_url:"/images/bone-editorial.png",sort_order:10},
+  {section_key:"about_hero",section_type:"hero",title:"Considered essentials.",subtitle:"Built around proportion, weight and repetition.",image_url:"/images/bone-editorial.jpg",sort_order:10},
   {section_key:"about_standard",section_type:"standard",subtitle:"P&R / THE STANDARD",title:"Pieces worn most\nshould be made best.",body:"P&R is built around considered everyday clothing—designed with attention to proportion, fabric weight and repeat wear.\n\nThe collection is designed in India around an easy, unisex point of view.",sort_order:20},
   {section_key:"about_fit",section_type:"fit",subtitle:"FIT PHILOSOPHY",title:"Room to move.\nEnough structure to\nhold its form.",body:"Dropped shoulders and deliberate volume shape the silhouette. Each piece should feel relaxed without losing structure.",image_url:"/products/literally-just-a-girl-tee/closeup-fabric.jpg",cta_label:"VIEW SIZE GUIDE",cta_url:"/shop",sort_order:30},
   {section_key:"about_build",section_type:"build",subtitle:"THE BUILD",body:"240 GSM COTTON\nUNISEX PROPORTIONS\nDESIGNED FOR REPEAT WEAR",sort_order:40},
@@ -37,7 +37,7 @@ export default function Home() {
   const featuredDropProducts = products.slice(0,5);
   const hero=cms.hero;
 
-  useEffect(()=>{fetch("/api/catalog").then(r=>r.ok?r.json():Promise.reject()).then(({products:rows})=>{const next:Product[]=rows.map((row:Record<string,unknown>)=>{const images=Array.isArray(row.images)?row.images:[];const gallery=images.map((image:Record<string,unknown>,index:number)=>({key:String(image.id??index),label:String(image.alt_text||`View ${index+1}`),src:String(image.url)})).filter(image=>image.src);return {id:Number(row.id),slug:String(row.slug),name:String(row.name),price:Number(row.price)/100,color:String(row.color),category:(row.category==="Women"?"Women":"Men"),note:String(row.description||""),variantId:Number(row.default_variant_id)||undefined,gallery:gallery.length?gallery:[{key:"front",label:"Front",src:String(row.image_url||"/images/campaign-hero.png")}]}});if(next.length){setProducts(next);setSelected(current=>next.find(p=>p.slug===current.slug)||next[0])}}).catch(()=>{})},[]);
+  useEffect(()=>{fetch("/api/catalog").then(r=>r.ok?r.json():Promise.reject()).then(({products:rows})=>{const next:Product[]=rows.map((row:Record<string,unknown>)=>{const images=Array.isArray(row.images)?row.images:[];const gallery=images.map((image:Record<string,unknown>,index:number)=>({key:String(image.id??index),label:String(image.alt_text||`View ${index+1}`),src:String(image.url)})).filter(image=>image.src);return {id:Number(row.id),slug:String(row.slug),name:String(row.name),price:Number(row.price)/100,color:String(row.color),category:(row.category==="Women"?"Women":"Men"),note:String(row.description||""),variantId:Number(row.default_variant_id)||undefined,gallery:gallery.length?gallery:[{key:"front",label:"Front",src:String(row.image_url||"/images/campaign-hero.jpg")}]}});if(next.length){setProducts(next);setSelected(current=>next.find(p=>p.slug===current.slug)||next[0])}}).catch(()=>{})},[]);
   useEffect(()=>{fetch("/api/content",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(({sections})=>setCmsSections(sections as ContentSection[])).catch(()=>{})},[]);
   useEffect(() => { const onScroll = () => setNavSolid(window.scrollY > 60 || view !== "home"); onScroll(); addEventListener("scroll", onScroll); return () => removeEventListener("scroll", onScroll); }, [view]);
   useEffect(() => { queueMicrotask(() => setView(viewFromPath(location.pathname))); const onPop = () => setView(viewFromPath(location.pathname)); addEventListener("popstate", onPop); return () => removeEventListener("popstate", onPop); }, []);
@@ -75,7 +75,7 @@ export default function Home() {
     <AnimatePresence mode="wait">
       {view === "home" && <motion.div key="home" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
         <section className="hero">
-          <motion.img style={{scale:heroScale}} src={hero?.image_url||"/images/campaign-hero.png"} alt="P&R oversized essentials campaign" />
+          <motion.img style={{scale:heroScale}} src={hero?.image_url||"/images/campaign-hero.jpg"} alt="P&R oversized essentials campaign" />
           <div className="hero-shade"/>
           <motion.div className="hero-copy" style={{opacity:heroOpacity}} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} transition={{duration:1.2,delay:.2}}>
             <p>Edition 001 / 2026</p><h1>{hero?.title||<>Oversized<br/>Essentials</>}</h1><span>{hero?.subtitle||"Built for everyday."}</span><button onClick={() => goCollection("All")}>{hero?.cta_label||"Shop the collection"} <ArrowRight size={14}/></button>
@@ -91,13 +91,13 @@ export default function Home() {
         </section>
 
         <section className="editorial-grid">
-          <motion.button onClick={() => goCollection("Women")} className="editorial large" {...fade}><img src="/images/bone-editorial.png" alt="Women's oversized collection"/><span><small>02 / WOMEN</small>Quiet form. Strong presence.<ArrowRight/></span></motion.button>
-          <motion.button onClick={() => goCollection("Men")} className="editorial" {...fade}><img src="/images/washed-charcoal.png" alt="Men's oversized collection"/><span><small>01 / MEN</small>The daily uniform.<ArrowRight/></span></motion.button>
+          <motion.button onClick={() => goCollection("Women")} className="editorial large" {...fade}><img src="/images/bone-editorial.jpg" alt="Women's oversized collection"/><span><small>02 / WOMEN</small>Quiet form. Strong presence.<ArrowRight/></span></motion.button>
+          <motion.button onClick={() => goCollection("Men")} className="editorial" {...fade}><img src="/images/washed-charcoal.jpg" alt="Men's oversized collection"/><span><small>01 / MEN</small>The daily uniform.<ArrowRight/></span></motion.button>
         </section>
 
         <section className="about" id="about"><motion.div {...fade}><p>P&R / THE STANDARD</p><h2>Less noise.<br/><em>More presence.</em></h2></motion.div><motion.div {...fade}><p>P&R was created around a simple belief: the things you wear most should be the things made best.</p><p>Our first study is the oversized T-shirt—reworked through proportion, weight and restraint. Made for movement. Designed for repetition.</p><div className="facts"><span>Designed in India</span><span>240 GSM cotton</span><span>Unisex proportions</span></div></motion.div></section>
         <section className="drop core"><motion.div className="section-head" {...fade}><div><p>CORE ESSENTIALS</p><h2>The daily rotation.</h2></div><button onClick={() => goCollection("All")}>Shop all <ArrowRight size={14}/></button></motion.div><div className="product-grid core-products">{products.slice(4,8).map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div></section>
-        <section className="campaign-break"><Image src="/images/campaign-hero.png" alt="P&R Edition 001 campaign" fill sizes="100vw"/><div><p>EDITION 001</p><h2>Built for everyday.</h2><button onClick={() => goCollection("All")}>Explore the collection <ArrowRight size={14}/></button></div></section>
+        <section className="campaign-break"><Image src="/images/campaign-hero.jpg" alt="P&R Edition 001 campaign" fill sizes="100vw"/><div><p>EDITION 001</p><h2>Built for everyday.</h2><button onClick={() => goCollection("All")}>Explore the collection <ArrowRight size={14}/></button></div></section>
         <Newsletter/>
       </motion.div>}
 
@@ -164,7 +164,7 @@ function AboutPage({sections}:{sections:ContentSection[] | null}) {
     return null;
   };
   return <motion.div className="about-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-    {hero&&<section className="about-hero"><Image src={hero.image_url||"/images/bone-editorial.png"} alt="P&R model wearing an oversized essential" fill priority sizes="100vw"/><div className="about-hero-shade"/><motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.8,ease:[.22,1,.36,1]}}><p className="about-kicker">ABOUT P&R</p><h1>{hero.title}</h1><span>{hero.subtitle}</span></motion.div></section>}
+    {hero&&<section className="about-hero"><Image src={hero.image_url||"/images/bone-editorial.jpg"} alt="P&R model wearing an oversized essential" fill priority sizes="100vw"/><div className="about-hero-shade"/><motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.8,ease:[.22,1,.36,1]}}><p className="about-kicker">ABOUT P&R</p><h1>{hero.title}</h1><span>{hero.subtitle}</span></motion.div></section>}
     {ordered.map(renderSection)}
   </motion.div>;
 }
@@ -197,7 +197,7 @@ function CartPage({cart,add,updateQuantity,openProduct,shop,checkout}:{cart:Prod
   const recommended = products.filter((product) => !items.some((item) => item.product.slug === product.slug)).slice(0, 8);
 
   if (!cart.length) return <motion.section className="cart-page empty-cart-page" initial={{opacity:0,filter:"blur(10px)",y:18}} animate={{opacity:1,filter:"blur(0px)",y:0}} exit={{opacity:0,filter:"blur(10px)",y:-12}} transition={{duration:.55,ease:[.22,1,.36,1]}}>
-    <div className="empty-cart-visual"><img src="/images/campaign-hero.png" alt="P&R campaign"/><div><ShoppingBag size={42}/><span>P&R / BAG</span></div></div>
+    <div className="empty-cart-visual"><img src="/images/campaign-hero.jpg" alt="P&R campaign"/><div><ShoppingBag size={42}/><span>P&R / BAG</span></div></div>
     <div className="empty-cart-copy"><p>SHOPPING BAG</p><h1>Your bag is empty.</h1><span>Looks like you haven&apos;t added anything yet. Start with the pieces everyone keeps coming back to.</span><div><button className="primary" onClick={() => shop("All")}>Continue Shopping</button><button className="secondary" onClick={() => shop("Women")}>Trending Collection</button></div><div className="empty-picks">{recommended.slice(0,3).map((product) => <button key={product.slug} onClick={() => openProduct(product)}>{product.name}<span>₹{product.price.toLocaleString("en-IN")}</span></button>)}</div></div>
   </motion.section>;
 
@@ -420,7 +420,7 @@ function AccountPage({shop,openProduct}:{shop:()=>void;openProduct:(product:Prod
   const cancelOrder=async(id:number)=>{const reason=window.prompt("Why would you like to cancel this order?");if(reason===null)return;const response=await fetch(`/api/account/orders/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"cancel",reason})});const body=await response.json() as {error?:string};setNotice(response.ok?"Your order has been cancelled.":body.error||"Unable to cancel this order.");if(response.ok){setOrderDetail(null);load()}};
 
   if(loading)return <section className="account-shell account-loading">Preparing your account…</section>;
-  if(unauthenticated)return <motion.section className="auth-page" initial={{opacity:0}} animate={{opacity:1}}><div><p>P&R MEMBERS</p><h1>Your wardrobe,<br/><em>remembered.</em></h1><span>Sign up or log in securely to save pieces, track orders, manage addresses and earn referral credit.</span><a className="auth-primary" href="/register?next=%2Faccount">Create account <ArrowRight size={16}/></a><a className="auth-secondary" href="/login?next=%2Faccount">Log in to an existing account</a><p className="auth-note"><ShieldCheck size={15}/> Secure password authentication. P&R never stores your password.</p></div><div className="auth-art"><Image src="/images/bone-editorial.png" alt="P&R member wardrobe" fill sizes="50vw"/></div></motion.section>;
+  if(unauthenticated)return <motion.section className="auth-page" initial={{opacity:0}} animate={{opacity:1}}><div><p>P&R MEMBERS</p><h1>Your wardrobe,<br/><em>remembered.</em></h1><span>Sign up or log in securely to save pieces, track orders, manage addresses and earn referral credit.</span><a className="auth-primary" href="/register?next=%2Faccount">Create account <ArrowRight size={16}/></a><a className="auth-secondary" href="/login?next=%2Faccount">Log in to an existing account</a><p className="auth-note"><ShieldCheck size={15}/> Secure password authentication. P&R never stores your password.</p></div><div className="auth-art"><Image src="/images/bone-editorial.jpg" alt="P&R member wardrobe" fill sizes="50vw"/></div></motion.section>;
   if(!data)return <section className="account-shell">Unable to load your account.</section>;
   return <motion.section className="account-shell" initial={{opacity:0}} animate={{opacity:1}}>
     <header className="account-head"><div><p>P&R ACCOUNT</p><h1>Welcome back,<br/>{data.customer.firstName}.</h1></div><button onClick={async()=>{await fetch("/api/auth/sign-out",{method:"POST",credentials:"same-origin"});location.href="/";}}><LogOut size={15}/> Log out</button></header>
