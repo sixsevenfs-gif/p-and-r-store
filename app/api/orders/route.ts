@@ -2,8 +2,8 @@ import { env } from "@/db/runtime";
 import { requireApiCustomer } from "../_lib/account";
 import { ensureCatalog } from "../_lib/catalog";
 import { getAuthSession } from "../../auth";
+import { normalizeIndianPhone } from "../_lib/account";
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const pinPattern = /^\d{6}$/;
 const paymentMethods = new Set(["cod", "razorpay"]);
 type IncomingItem = { variantId?: number; productSlug?: string; size?: string; quantity?: number };
@@ -28,22 +28,23 @@ export async function POST(request: Request) {
   const decremented: Line[] = [];
   try {
     const body = await request.json() as Record<string, unknown>;
-    const email = clean(body.email, 254).toLowerCase(), firstName = clean(body.firstName, 60), lastName = clean(body.lastName, 60);
+    const phone = normalizeIndianPhone(clean(body.phone, 24)), firstName = clean(body.firstName, 60), lastName = clean(body.lastName, 60);
     const address = clean(body.address, 160), city = clean(body.city, 80), pinCode = clean(body.pinCode, 6);
     const checkoutKey = clean(body.checkoutKey, 64), paymentMethod = clean(body.paymentMethod || "cod", 20).toLowerCase();
     const items = Array.isArray(body.items) ? body.items as IncomingItem[] : [];
-    if (!emailPattern.test(email) || !firstName || !lastName || !address || !city || !pinPattern.test(pinCode)) return Response.json({ error: "Complete all delivery details with a valid email and 6-digit PIN code." }, { status: 400 });
+    if (!phone || !firstName || !lastName || !address || !city || !pinPattern.test(pinCode)) return Response.json({ error: "Complete all delivery details with a valid mobile number and 6-digit PIN code." }, { status: 400 });
     if (!/^[0-9a-f-]{36}$/i.test(checkoutKey) || !paymentMethods.has(paymentMethod)) return Response.json({ error: "Invalid checkout session or payment method." }, { status: 400 });
     if (!items.length || items.length > 30 || items.some((item) => (!Number.isInteger(item.variantId) && !(clean(item.productSlug, 120) && clean(item.size, 16))) || !Number.isInteger(item.quantity) || Number(item.quantity) < 1 || Number(item.quantity) > 10)) return Response.json({ error: "Your bag contains an invalid item." }, { status: 400 });
     const session = await getAuthSession(request);
-    if (session?.user && session.user.email.trim().toLowerCase() !== email) return Response.json({ error: "Checkout email must match your signed-in account." }, { status: 403 });
+    if (session?.user?.phone && normalizeIndianPhone(session.user.phone) !== phone) return Response.json({ error: "Checkout mobile number must match your signed-in account." }, { status: 403 });
+    const email = session?.user?.email?.trim().toLowerCase() || `phone-${phone.replace(/\D/g, "")}@members.invalid`;
     const requestedWalletAmount = Math.max(0, Math.floor(Number(body.walletAmount) || 0));
     const signedInCustomer = session?.user ? await requireApiCustomer(request) : null;
 
     await ensureCatalog();
-    await env.DB.prepare(`INSERT INTO customers(email,first_name,last_name,address,city,pin_code,referral_code) VALUES (?,?,?,?,?,?,?)
-      ON CONFLICT(email) DO UPDATE SET first_name=excluded.first_name,last_name=excluded.last_name,address=excluded.address,city=excluded.city,pin_code=excluded.pin_code,updated_at=unixepoch()`)
-      .bind(email, firstName, lastName, address, city, pinCode, `GUEST${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`).run();
+    await env.DB.prepare(`INSERT INTO customers(email,first_name,last_name,address,city,pin_code,phone,referral_code) VALUES (?,?,?,?,?,?,?,?)
+      ON CONFLICT(email) DO UPDATE SET first_name=excluded.first_name,last_name=excluded.last_name,address=excluded.address,city=excluded.city,pin_code=excluded.pin_code,phone=excluded.phone,updated_at=unixepoch()`)
+      .bind(email, firstName, lastName, address, city, pinCode, phone, `GUEST${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`).run();
     const customer = await env.DB.prepare("SELECT id FROM customers WHERE email=?").bind(email).first<{ id:number }>();
     if (!customer) throw new Error("Customer creation failed.");
     const existing = await env.DB.prepare("SELECT * FROM orders WHERE checkout_key=?").bind(checkoutKey).first<Record<string, unknown>>();
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
     const result = await env.DB.prepare(`INSERT INTO orders(customer_id,checkout_key,subtotal_amount,discount_amount,shipping_amount,total_amount,wallet_amount,payable_amount,status,payment_status,payment_method,shipping_address,coupon_code)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(customer.id, checkoutKey, subtotal, coupon.amount, shipping, total, walletPaise, total - walletPaise,
       paymentMethod === "cod" ? "pending" : "awaiting_payment", "pending", paymentMethod,
-      JSON.stringify({ firstName, lastName, address, city, pinCode, email }), coupon.code).run();
+      JSON.stringify({ firstName, lastName, address, city, pinCode, phone }), coupon.code).run();
     orderId = Number(result.meta.last_row_id);
     if (!orderId) throw new Error("Order creation failed.");
     for (const line of lines) {

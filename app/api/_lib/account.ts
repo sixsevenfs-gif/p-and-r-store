@@ -2,40 +2,79 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { customers, referralConfig, referrals } from "../../../db/schema";
 import { getAuthSession } from "../../auth";
+import { env } from "../../../db/runtime";
 
 export function normalizeEmail(value: string) {
   return value.trim().toLowerCase();
 }
 
-export async function requireApiCustomer(request?: Request) {
-  const session = await getAuthSession(request);
-  if (!session?.user) return null;
-  const email = normalizeEmail(session.user.email);
+export function normalizeIndianPhone(value: string) {
+  const raw = value.trim();
+  if (raw.startsWith("+")) {
+    const phone = `+${raw.slice(1).replace(/\D/g, "")}`;
+    return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : "";
+  }
+  const digits = raw.replace(/\D/g, "");
+  if (/^[6-9]\d{9}$/.test(digits)) return `+91${digits}`;
+  if (/^91[6-9]\d{9}$/.test(digits)) return `+${digits}`;
+  return "";
+}
+
+function memberEmailForPhone(phone: string) {
+  return `phone-${phone.replace(/\D/g, "")}@members.invalid`;
+}
+
+type MemberUser = { id: string; email: string; phone: string; name: string };
+
+export async function ensureCustomerForUser(user: MemberUser) {
   const db = getDb();
-  let customer = await db.select().from(customers).where(eq(customers.authUserId, session.user.id)).get();
-  if (!customer) customer = await db.select().from(customers).where(eq(customers.email, email)).get();
+  const phone = normalizeIndianPhone(user.phone);
+  const email = normalizeEmail(user.email);
+  let customer = await db.select().from(customers).where(eq(customers.authUserId, user.id)).get();
+  if (!customer && phone) customer = await db.select().from(customers).where(eq(customers.phone, phone)).get();
+  if (!customer && email) customer = await db.select().from(customers).where(eq(customers.email, email)).get();
   if (!customer) {
-    const names = session.user.name.trim().split(/\s+/);
-    const referralCode = await uniqueReferralCode(email);
+    const names = user.name.trim().split(/\s+/);
+    const identity = phone || email || user.id;
     await db.insert(customers).values({
-      authUserId: session.user.id,
-      email,
+      authUserId: user.id,
+      // The column is retained for legacy orders; it is never shown for phone members.
+      email: email || memberEmailForPhone(phone),
       firstName: names[0] || "P&R",
       lastName: names.slice(1).join(" ") || "Member",
       address: "",
       city: "",
       pinCode: "",
-      authProvider: "better-auth",
-      referralCode,
+      phone,
+      authProvider: phone ? "phone_otp" : "supabase_email",
+      referralCode: await uniqueReferralCode(identity),
     });
-    customer = await db.select().from(customers).where(eq(customers.authUserId, session.user.id)).get();
-  } else if (customer.authUserId !== session.user.id) {
-    // Existing guest customers are linked only after they authenticate with
-    // the same verified Better Auth email address.
-    await db.update(customers).set({ authUserId: session.user.id, authProvider: "better-auth", updatedAt: new Date() }).where(eq(customers.id, customer.id));
+    customer = await db.select().from(customers).where(eq(customers.authUserId, user.id)).get();
+  } else if (customer.authUserId !== user.id) {
+    await db.update(customers).set({
+      authUserId: user.id,
+      authProvider: phone ? "phone_otp" : "supabase_email",
+      phone: phone || customer.phone,
+      updatedAt: new Date(),
+    }).where(eq(customers.id, customer.id));
     customer = await db.select().from(customers).where(eq(customers.id, customer.id)).get();
   }
   return customer ?? null;
+}
+
+export async function recordPhoneLogin(customerId: number, user: MemberUser) {
+  const phone = normalizeIndianPhone(user.phone);
+  if (!phone) return;
+  await env.DB.batch([
+    env.DB.prepare("UPDATE customers SET last_login_at=unixepoch(),updated_at=unixepoch() WHERE id=?").bind(customerId),
+    env.DB.prepare("INSERT INTO customer_login_events(customer_id,auth_user_id,phone) VALUES (?,?,?)").bind(customerId, user.id, phone),
+  ]);
+}
+
+export async function requireApiCustomer(request?: Request) {
+  const session = await getAuthSession(request);
+  if (!session?.user) return null;
+  return ensureCustomerForUser(session.user);
 }
 
 export async function attachReferral(customerId: number, code: string | null | undefined) {

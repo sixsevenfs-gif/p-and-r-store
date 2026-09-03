@@ -33,6 +33,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   const body = await request.json() as { action?: string; reason?: string };
   if (!Number.isInteger(id) || body.action !== "cancel") return Response.json({ error: "Invalid order request." }, { status: 400 });
   const reason = String(body.reason || "Customer requested cancellation.").trim().slice(0, 600);
+  const actor = customer.phone || customer.email;
   const claim = await env.DB.prepare(`UPDATE orders SET status='cancelled',shipping_status='cancelled',cancelled_at=unixepoch(),cancellation_reason=?,inventory_restored_at=unixepoch()
     WHERE id=? AND customer_id=? AND inventory_restored_at IS NULL AND status IN ('pending','awaiting_payment','confirmed','processing')`).bind(reason, id, customer.id).run();
   if (Number(claim.meta.changes || 0) !== 1) return Response.json({ error: "This order can no longer be cancelled online." }, { status: 409 });
@@ -40,11 +41,11 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   await env.DB.batch([
     ...items.results.flatMap((item) => [
       env.DB.prepare("UPDATE product_variants SET stock=stock+? WHERE id=?").bind(item.quantity, item.variant_id),
-      env.DB.prepare("INSERT INTO inventory_movements(variant_id,delta,reason,admin_email) VALUES (?,?,?,?)").bind(item.variant_id, item.quantity, `Order #${id} customer cancellation restoration`, `customer:${customer.email}`),
+      env.DB.prepare("INSERT INTO inventory_movements(variant_id,delta,reason,admin_email) VALUES (?,?,?,?)").bind(item.variant_id, item.quantity, `Order #${id} customer cancellation restoration`, `customer:${actor}`),
     ]),
-    env.DB.prepare("INSERT INTO order_status_history(order_id,status,note,actor_email) VALUES (?,?,?,?)").bind(id, "CANCELLED", reason, customer.email),
-    env.DB.prepare("INSERT INTO order_timeline(order_id,event_type,public_title,public_description,actor_email) VALUES (?,?,?,?,?)").bind(id, "cancellation", "Order cancelled", reason, customer.email),
-    env.DB.prepare("INSERT INTO audit_logs(admin_email,action,resource,resource_id,detail) VALUES (?,?,?,?,?)").bind(`customer:${customer.email}`, "customer_order_cancellation", "orders", String(id), JSON.stringify({ reason })),
+    env.DB.prepare("INSERT INTO order_status_history(order_id,status,note,actor_email) VALUES (?,?,?,?)").bind(id, "CANCELLED", reason, actor),
+    env.DB.prepare("INSERT INTO order_timeline(order_id,event_type,public_title,public_description,actor_email) VALUES (?,?,?,?,?)").bind(id, "cancellation", "Order cancelled", reason, actor),
+    env.DB.prepare("INSERT INTO audit_logs(admin_email,action,resource,resource_id,detail) VALUES (?,?,?,?,?)").bind(`customer:${actor}`, "customer_order_cancellation", "orders", String(id), JSON.stringify({ reason })),
   ]);
   return Response.json({ cancelled: true });
 }

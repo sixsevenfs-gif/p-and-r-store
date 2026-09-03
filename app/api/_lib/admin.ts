@@ -13,5 +13,7 @@ export async function roleForUser(user: { id: string; email: string }): Promise<
 
 export async function requireAdmin(request?: Request): Promise<AdminIdentity | null> {
   const session = await getAuthSession(request);
-  return session?.user ? roleForUser(session.user) : null;
+  // Customer accounts use phone OTP. Administration deliberately remains an
+  // email/password account so store access cannot be granted by a phone-only session.
+  return session?.user?.email ? roleForUser(session.user) : null;
 }

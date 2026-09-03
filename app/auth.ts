@@ -5,7 +5,7 @@ export function appEnv(name: string) {
 }
 
 export type AuthSession = {
-  user: { id: string; email: string; name: string };
+  user: { id: string; email: string; phone: string; name: string };
 };
 
 /** Validate the access token with Supabase before protected data is used. */
@@ -13,12 +13,15 @@ export async function getAuthSession(request?: Request): Promise<AuthSession | n
   void request;
   const supabase = await createSupabaseServerClient();
   const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user?.email) return null;
+  if (error || !user || (!user.email && !user.phone)) return null;
+  const email = user.email || "";
+  const phone = user.phone || "";
   return {
     user: {
       id: user.id,
-      email: user.email,
-      name: String(user.user_metadata?.full_name || user.user_metadata?.name || user.email.split("@")[0]),
+      email,
+      phone,
+      name: String(user.user_metadata?.full_name || user.user_metadata?.name || phone || email.split("@")[0]),
     },
   };
 }
