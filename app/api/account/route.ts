@@ -6,7 +6,7 @@ import { attachReferral, requireApiCustomer } from "../_lib/account";
 
 export async function GET(request: Request) {
   try {
-    const customer = await requireApiCustomer();
+    const customer = await requireApiCustomer(request);
     if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
     const db = getDb();
     const [savedAddresses, customerOrders, ledger, savedWishlist] = await Promise.all([
@@ -30,7 +30,14 @@ export async function GET(request: Request) {
       referralLink: `${origin}/?ref=${encodeURIComponent(customer.referralCode)}`,
       wallet: { pending, approved: Math.max(0, approved), used, ledger },
       addresses: savedAddresses,
-      orders: customerOrders.map((order) => ({ ...order, items: items.filter((item) => item.orderId === order.id) })),
+      // Monetary values are stored as paise in the database. The customer UI
+      // works in rupees, so convert once at this API boundary.
+      orders: customerOrders.map((order) => ({
+        ...order,
+        totalAmount: Math.round(order.totalAmount / 100),
+        walletAmount: Math.round(order.walletAmount / 100),
+        items: items.filter((item) => item.orderId === order.id),
+      })),
       wishlist: savedWishlist.map((entry) => ({ ...entry, product: products.find((product) => product.slug === entry.productSlug) ?? null })),
     });
   } catch {
