@@ -5,7 +5,7 @@ P&R is a Next.js storefront and operations console backed by Supabase.
 ## Architecture
 
 - Next.js: storefront, account area, checkout APIs, and `/admin`
-- Supabase Auth: customer and administrator sessions
+- Signed name-and-mobile sessions: customer and administrator access
 - Supabase PostgreSQL: catalog, inventory, carts, orders, coupons, payments, referrals, and audit data
 - Supabase Storage: public product images in the `product-images` bucket
 - Render: Node.js web service deployed automatically from GitHub `main`
@@ -38,19 +38,18 @@ WebP, and AVIF. Run these files in Dashboard > SQL Editor, in order:
 1. `supabase/migrations/0001_auth_storage.sql`
 2. `supabase/migrations/0002_commerce.sql`
 
-After the intended administrator has registered, promote that user once:
+Run `supabase/migrations/0003_phone_members.sql` as well. Customer members use
+their name and Indian mobile number; no email, password, or OTP is required.
 
-```sql
-insert into public.admin_users (user_id, role, status)
-select id, 'SUPER_ADMIN', 'active'
-from auth.users
-where lower(email) = lower('owner@example.com')
-on conflict (user_id) do update
-set role = excluded.role, status = excluded.status;
+Admin access is separate. Add the store owner's number to
+`ADMIN_PHONE_NUMBERS` in both `.env.local` and Render, for example:
+
+```text
+ADMIN_PHONE_NUMBERS=9876543210
 ```
 
-Replace `owner@example.com` with the real administrator email. Admin access is
-always checked server-side against `admin_users`.
+Only configured numbers can sign in at `/admin/login` and perform operational
+actions such as updating orders to Shipped or Out for delivery.
 
 ## Render deployment
 
@@ -61,14 +60,34 @@ Create a Render **Web Service** from the private GitHub repository:
 - Build command: `npm ci && npm run build`
 - Start command: `npm run start`
 - Auto-deploy: On Commit
-- Health check path: `/`
+- Health check path: `/api/health`
 
 Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`,
-and `NODE_VERSION=22.13.0` in Render. Never commit `.env.local`.
+`ADMIN_PHONE_NUMBERS`, `MEMBER_SESSION_SECRET`, and `NODE_VERSION=22.13.0` in
+Render. Never commit `.env.local`.
 
 Once Render provides the production URL, set that exact origin as Supabase
 Authentication's Site URL and add `https://your-service.onrender.com/**` to the
 allowed Redirect URLs.
+
+## Separate operations and public deployments
+
+Set `APP_MODE=admin` on the current Render service. `/` redirects to `/admin`;
+customer pages (including `/user`, `/shop`, login and checkout) return 404.
+Backend APIs remain available and admin authentication is still required.
+Production defaults to this mode when `APP_MODE` is unset.
+
+For local storefront development, run `npm run dev` and open `/`. Development
+defaults to `all`, exposing both storefront and admin. Set `APP_MODE=storefront`
+in `.env.local` to preview the public deployment's restrictions.
+
+Later, create a separate public service from this repository with
+`APP_MODE=storefront` and the required Supabase, database and payment settings.
+The public website opens at `/`; `/admin`, `/admin-panel`, `/api/admin/*` and
+`/api/auth/admin` return 404. Keep the operations service in `admin` mode.
+Each service runs its own backend APIs against the shared database, keeping
+browser API requests on the same origin. Configure the payment webhook on
+only one service. Restart/redeploy after changing modes.
 
 ## Verification
 
