@@ -197,11 +197,18 @@ function AboutPage({sections}:{sections:ContentSection[] | null}) {
 function ProductCard({p,open,add}:{p:Product,i:number,open:(p:Product)=>void,add:(p:Product)=>void}) {
   const first = p.gallery[0];
   const second = p.gallery[1] ?? p.gallery[0];
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const save = async () => {
-    const response = await fetch("/api/account/wishlist", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({productSlug:p.slug}) });
-    if (response.status === 401) location.href = `/login?next=${encodeURIComponent("/account")}`;
+    if (saving) return;
+    setSaving(true);
+    try {
+      const response = await fetch(saved ? `/api/account/wishlist?productSlug=${encodeURIComponent(p.slug)}` : "/api/account/wishlist", { method:saved ? "DELETE" : "POST", headers:{"Content-Type":"application/json"}, body:saved ? undefined : JSON.stringify({productSlug:p.slug}) });
+      if (response.status === 401) location.href = `/login?next=${encodeURIComponent("/account")}`;
+      if (response.ok) setSaved((value) => !value);
+    } finally { setSaving(false); }
   };
-  return <motion.article className="product-card" {...fade}><button className="product-image" onClick={()=>open(p)}><Image src={first.src} alt={`${p.name} ${first.label}`} fill sizes="(max-width: 760px) 50vw, 25vw" placeholder="blur" blurDataURL={blurDataURL}/><Image className="second" src={second.src} alt="" fill sizes="(max-width: 760px) 50vw, 25vw" placeholder="blur" blurDataURL={blurDataURL}/><span>View piece <ArrowRight size={14}/></span></button><button className="card-wishlist" onClick={save} aria-label={`Save ${p.name} to wishlist`}><Heart size={16}/></button><div className="product-meta"><button onClick={()=>open(p)}><b>{p.name}</b><small>{p.color}</small></button><span>₹{p.price.toLocaleString("en-IN")}</span><button className="quick" onClick={()=>add(p)}>Quick add</button></div></motion.article>
+  return <motion.article className="product-card" {...fade}><button className="product-image" onClick={()=>open(p)}><Image src={first.src} alt={`${p.name} ${first.label}`} fill sizes="(max-width: 760px) 50vw, 25vw" placeholder="blur" blurDataURL={blurDataURL}/><Image className="second" src={second.src} alt="" fill sizes="(max-width: 760px) 50vw, 25vw" placeholder="blur" blurDataURL={blurDataURL}/><span>View piece <ArrowRight size={14}/></span></button><motion.button className={`card-wishlist ${saved ? "saved" : ""}`} onClick={save} aria-label={`${saved ? "Remove" : "Save"} ${p.name} ${saved ? "from" : "to"} wishlist`} aria-pressed={saved} animate={saved ? {scale:[1,1.28,.96,1]} : {scale:1}} transition={{duration:.36}}><Heart size={16} fill={saved ? "currentColor" : "none"}/>{saved&&<motion.i className="wishlist-pop" initial={{scale:.2,opacity:.9}} animate={{scale:1.65,opacity:0}} transition={{duration:.46}}/>}</motion.button><div className="product-meta"><button onClick={()=>open(p)}><b>{p.name}</b><small>{p.color}</small></button><span>₹{p.price.toLocaleString("en-IN")}</span><button className="quick" onClick={()=>add(p)}>Quick add</button></div></motion.article>
 }
 
 function CartPage({cart,add,updateQuantity,updateSize,openProduct,shop,checkout}:{cart:Product[],add:(p:Product)=>void,updateQuantity:(p:Product,quantity:number)=>void,updateSize:(p:Product,size:string)=>void,openProduct:(p:Product)=>void,shop:(filter?:"All"|"Men"|"Women")=>void,checkout:()=>void}) {
