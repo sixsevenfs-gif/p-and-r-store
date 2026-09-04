@@ -216,8 +216,7 @@
 @media(max-width:760px){.header-wallet{display:none!important}}
 
 /* Compact editorial commerce cards */
-.product-card{position:relative}
-.card-wishlist{position:absolute;z-index:3;right:12px;top:12px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.94);display:grid;place-items:center;transition:transform .22s ease,background .22s ease;color:#111;overflow:visible}.card-wishlist:hover{transform:scale(1.07);background:#fff}.card-wishlist:disabled{opacity:.65;cursor:wait}.card-wishlist.saved{background:#111;color:#fff}.wishlist-pop{position:absolute;inset:-7px;border:1px solid currentColor;border-radius:50%;pointer-events:none}.wishlist-error{position:absolute;z-index:4;left:8px;right:8px;bottom:48px;padding:7px 8px;background:#111;color:#fff;font-size:9px;line-height:1.35;text-align:center}
+.product-card{position:relative;isolation:isolate}.product-card>.product-image{z-index:1}.card-wishlist{position:absolute;z-index:20!important;right:12px;top:12px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.94);display:grid;place-items:center;transition:transform .22s ease,background .22s ease;color:#111;overflow:visible;pointer-events:auto!important;touch-action:manipulation}.card-wishlist:hover{transform:scale(1.07);background:#fff}.card-wishlist:disabled{opacity:.65;cursor:wait}.card-wishlist.saved{background:#111;color:#fff}.wishlist-pop{position:absolute;inset:-7px;border:1px solid currentColor;border-radius:50%;pointer-events:none}.wishlist-error{position:absolute;z-index:21;left:8px;right:8px;bottom:48px;padding:7px 8px;background:#111;color:#fff;font-size:9px;line-height:1.35;text-align:center}
 .featured-products{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
 .core-products,.collection-products{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .featured-products .product-image,.core-products .product-image,.collection-products .product-image{aspect-ratio:4/5}
