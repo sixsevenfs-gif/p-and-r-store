@@ -199,16 +199,24 @@ function ProductCard({p,open,add}:{p:Product,i:number,open:(p:Product)=>void,add
   const second = p.gallery[1] ?? p.gallery[0];
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  useEffect(()=>{setMounted(true)},[]);
+  // Keep the first browser render identical to SSR. In dev, Fast Refresh can
+  // retain a previous saved state and otherwise cause a hydration mismatch.
+  const visiblySaved=mounted&&saved;
   const save = async () => {
     if (saving) return;
+    setSaveError("");
     setSaving(true);
     try {
       const response = await fetch(saved ? `/api/account/wishlist?productSlug=${encodeURIComponent(p.slug)}` : "/api/account/wishlist", { method:saved ? "DELETE" : "POST", headers:{"Content-Type":"application/json"}, body:saved ? undefined : JSON.stringify({productSlug:p.slug}) });
-      if (response.status === 401) location.href = `/login?next=${encodeURIComponent("/account")}`;
-      if (response.ok) setSaved((value) => !value);
-    } finally { setSaving(false); }
+      if (response.status === 401) { location.href = `/login?next=${encodeURIComponent("/account")}`; return; }
+      if (!response.ok) { const body=await response.json().catch(()=>({})); setSaveError(body.error||"Could not update wishlist."); return; }
+      setSaved((value) => !value);
+    } catch { setSaveError("Could not update wishlist."); } finally { setSaving(false); }
   };
-  return <motion.article className="product-card" {...fade}><button className="product-image" onClick={()=>open(p)}><Image src={first.src} alt={`${p.name} ${first.label}`} fill sizes="(max-width: 760px) 50vw, 25vw" placeholder="blur" blurDataURL={blurDataURL}/><Image className="second" src={second.src} alt="" fill sizes="(max-width: 760px) 50vw, 25vw" placeholder="blur" blurDataURL={blurDataURL}/><span>View piece <ArrowRight size={14}/></span></button><motion.button className={`card-wishlist ${saved ? "saved" : ""}`} onClick={save} aria-label={`${saved ? "Remove" : "Save"} ${p.name} ${saved ? "from" : "to"} wishlist`} aria-pressed={saved} animate={saved ? {scale:[1,1.28,.96,1]} : {scale:1}} transition={{duration:.36}}><Heart size={16} fill={saved ? "currentColor" : "none"}/>{saved&&<motion.i className="wishlist-pop" initial={{scale:.2,opacity:.9}} animate={{scale:1.65,opacity:0}} transition={{duration:.46}}/>}</motion.button><div className="product-meta"><button onClick={()=>open(p)}><b>{p.name}</b><small>{p.color}</small></button><span>₹{p.price.toLocaleString("en-IN")}</span><button className="quick" onClick={()=>add(p)}>Quick add</button></div></motion.article>
+  return <motion.article className="product-card" {...fade}><button className="product-image" onClick={()=>open(p)}><Image src={first.src} alt={`${p.name} ${first.label}`} fill sizes="(max-width: 760px) 50vw, 25vw" placeholder="blur" blurDataURL={blurDataURL}/><Image className="second" src={second.src} alt="" fill sizes="(max-width: 760px) 50vw, 25vw" placeholder="blur" blurDataURL={blurDataURL}/><span>View piece <ArrowRight size={14}/></span></button><motion.button className={`card-wishlist ${visiblySaved ? "saved" : ""}`} onClick={save} disabled={saving} aria-label={`${visiblySaved ? "Remove" : "Save"} ${p.name} ${visiblySaved ? "from" : "to"} wishlist`} aria-pressed={visiblySaved} animate={visiblySaved ? {scale:[1,1.28,.96,1]} : {scale:1}} transition={{duration:.36}}><Heart size={16} fill={visiblySaved ? "currentColor" : "none"}/>{visiblySaved&&<motion.i className="wishlist-pop" initial={{scale:.2,opacity:.9}} animate={{scale:1.65,opacity:0}} transition={{duration:.46}}/>}</motion.button>{saveError&&<small className="wishlist-error" role="alert">{saveError}</small>}<div className="product-meta"><button onClick={()=>open(p)}><b>{p.name}</b><small>{p.color}</small></button><span>₹{p.price.toLocaleString("en-IN")}</span><button className="quick" onClick={()=>add(p)}>Quick add</button></div></motion.article>
 }
 
 function CartPage({cart,add,updateQuantity,updateSize,openProduct,shop,checkout}:{cart:Product[],add:(p:Product)=>void,updateQuantity:(p:Product,quantity:number)=>void,updateSize:(p:Product,size:string)=>void,openProduct:(p:Product)=>void,shop:(filter?:"All"|"Men"|"Women")=>void,checkout:()=>void}) {

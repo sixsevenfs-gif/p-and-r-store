@@ -5,7 +5,7 @@ import { products } from "../../../product-data";
 import { requireApiCustomer } from "../../_lib/account";
 
 export async function POST(request: Request) {
-  const customer = await requireApiCustomer();
+  const customer = await requireApiCustomer(request);
   if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
   const { productSlug } = await request.json() as { productSlug?: string };
   if (!products.some((product) => product.slug === productSlug)) return Response.json({ error: "Invalid product." }, { status: 400 });
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const customer = await requireApiCustomer();
+  const customer = await requireApiCustomer(request);
   if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
   const productSlug = new URL(request.url).searchParams.get("productSlug") ?? "";
   await getDb().delete(wishlists).where(and(eq(wishlists.customerId, customer.id), eq(wishlists.productSlug, productSlug)));
