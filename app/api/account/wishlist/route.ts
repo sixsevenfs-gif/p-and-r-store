@@ -1,22 +1,31 @@
-import { and, eq } from "drizzle-orm";
-import { getDb } from "../../../../db";
-import { wishlists } from "../../../../db/schema";
-import { products } from "../../../product-data";
+import { env } from "@/db/runtime";
 import { requireApiCustomer } from "../../_lib/account";
 
 export async function POST(request: Request) {
-  const customer = await requireApiCustomer(request);
-  if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
-  const { productSlug } = await request.json() as { productSlug?: string };
-  if (!products.some((product) => product.slug === productSlug)) return Response.json({ error: "Invalid product." }, { status: 400 });
-  await getDb().insert(wishlists).values({ customerId: customer.id, productSlug: productSlug! }).onConflictDoNothing();
-  return Response.json({ saved: true }, { status: 201 });
+  try {
+    const customer = await requireApiCustomer(request);
+    if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
+    const { productSlug: value } = await request.json().catch(() => ({})) as { productSlug?: string };
+    const productSlug = String(value || "").trim();
+    const product = await env.DB.prepare("SELECT id FROM products WHERE slug=? AND status='published'").bind(productSlug).first<{ id: number }>();
+    if (!product) return Response.json({ error: "This product is not available to save." }, { status: 400 });
+    await env.DB.prepare("INSERT INTO wishlists(customer_id,product_slug) VALUES (?,?) ON CONFLICT (customer_id,product_slug) DO NOTHING").bind(customer.id, productSlug).run();
+    return Response.json({ saved: true }, { status: 201 });
+  } catch (error) {
+    console.error("Wishlist save failed", error);
+    return Response.json({ error: "Could not save this piece right now. Please try again." }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request) {
-  const customer = await requireApiCustomer(request);
-  if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
-  const productSlug = new URL(request.url).searchParams.get("productSlug") ?? "";
-  await getDb().delete(wishlists).where(and(eq(wishlists.customerId, customer.id), eq(wishlists.productSlug, productSlug)));
-  return Response.json({ deleted: true });
+  try {
+    const customer = await requireApiCustomer(request);
+    if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
+    const productSlug = new URL(request.url).searchParams.get("productSlug") ?? "";
+    await env.DB.prepare("DELETE FROM wishlists WHERE customer_id=? AND product_slug=?").bind(customer.id, productSlug).run();
+    return Response.json({ deleted: true });
+  } catch (error) {
+    console.error("Wishlist removal failed", error);
+    return Response.json({ error: "Could not update your wishlist right now. Please try again." }, { status: 500 });
+  }
 }
