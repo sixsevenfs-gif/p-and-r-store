@@ -25,6 +25,7 @@ export default function Home() {
   const [view, setView] = useState<View>("home");
   const [selected, setSelected] = useState(seedProducts[0]);
   const [cart, setCart] = useState<Product[]>([]);
+  const [cartNotice, setCartNotice] = useState<Product | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -51,12 +52,21 @@ export default function Home() {
   };
   useEffect(() => { queueMicrotask(() => void refreshWallet()); }, []);
   useEffect(() => { localStorage.setItem("pr-bag", JSON.stringify(cart.map(p => p.slug))); }, [cart]);
+  useEffect(() => {
+    if (!cartNotice) return;
+    const timeout = window.setTimeout(() => setCartNotice(null), 3400);
+    return () => window.clearTimeout(timeout);
+  }, [cartNotice]);
   useEffect(() => { document.body.style.overflow = menuOpen || searchOpen ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [menuOpen, searchOpen]);
   const go = (next: View) => { setView(next); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:next}, "", next === "home" ? "/" : `/${next === "collection" ? "shop" : next === "cart" ? "bag" : next}`); requestAnimationFrame(() => scrollTo({ top: 0, behavior: next === "cart" ? "auto" : "smooth" })); };
   const goCollection = (filter: "All" | "Men" | "Women" = "All") => { setCollectionFilter(filter); go("collection"); };
   const goWallet = () => { setView("account"); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:"account"}, "", "/account?tab=wallet"); requestAnimationFrame(() => scrollTo({top:0,behavior:"smooth"})); };
   const openProduct = (p: Product) => { setSelected(p); go("product"); };
-  const add = (p = selected) => { if(p.variantId) void fetch("/api/cart",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({variantId:p.variantId,quantity:1})}); setCart(c => [...c, p]); go("cart"); };
+  const add = (p = selected) => {
+    if (p.variantId) void fetch("/api/cart", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({variantId:p.variantId,quantity:1}) });
+    setCart((current) => [...current, p]);
+    setCartNotice(p);
+  };
   const setCartQuantity = (product: Product, quantity: number) => setCart((current) => {
     const safeQuantity = Math.max(0, quantity);
     const withoutProduct = current.filter((item) => item.slug !== product.slug);
@@ -122,6 +132,11 @@ export default function Home() {
     </AnimatePresence>
 
     <Footer go={go}/>
+    <AnimatePresence>{cartNotice && <motion.aside className="cart-added-toast" role="status" aria-live="polite" initial={{opacity:0,y:20,scale:.96}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:14,scale:.97}} transition={{duration:.28,ease:[.22,1,.36,1]}}>
+      <motion.span initial={{scale:.65,rotate:-14}} animate={{scale:1,rotate:0}} transition={{type:"spring",stiffness:420,damping:18}}><ShoppingBag size={19}/></motion.span>
+      <div><b>Added to your bag</b><small>{cartNotice.name}</small></div>
+      <button onClick={() => { setCartNotice(null); go("cart"); }}>View bag <ArrowRight size={14}/></button>
+    </motion.aside>}</AnimatePresence>
     <AnimatePresence>{searchOpen && <SearchOverlay close={() => setSearchOpen(false)} openProduct={openProduct}/>}</AnimatePresence>
     <AnimatePresence>{cartOpen && <Cart cart={cart} close={()=>setCartOpen(false)} remove={(i)=>setCart(c=>c.filter((_,x)=>x!==i))} checkout={()=>{setCartOpen(false);go("checkout")}}/>}</AnimatePresence>
     <AnimatePresence>{menuOpen && <motion.div className="menu" initial={{x:"-100%"}} animate={{x:0}} exit={{x:"-100%"}} transition={{ease:[.22,1,.36,1],duration:.55}}><button onClick={()=>setMenuOpen(false)} aria-label="Close menu"><X/></button><nav><button onClick={()=>goCollection("All")}>Shop</button><button onClick={()=>goCollection("All")}>New Drop</button><button onClick={()=>goCollection("Men")}>Men</button><button onClick={()=>goCollection("Women")}>Women</button><button onClick={()=>go("about")}>About</button><button onClick={()=>setSearchOpen(true)}>Search</button></nav><p>Less noise. More presence.</p></motion.div>}</AnimatePresence>
