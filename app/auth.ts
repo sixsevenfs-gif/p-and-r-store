@@ -49,8 +49,7 @@ export async function createAdminSession(phone: string) { return createSignedSes
 
 /** Customer sessions are independent from Supabase email/phone Auth. */
 export async function getAuthSession(request?: Request): Promise<AuthSession | null> {
-  void request;
-  const value = await readSignedSession(memberCookie);
+  const value = await readSignedSession(memberCookie, request);
   const customerId = Number(value);
   return Number.isInteger(customerId) && customerId > 0 ? { user: { id: `member:${customerId}`, email: "", phone: "", name: "P&R Member" } } : null;
 }

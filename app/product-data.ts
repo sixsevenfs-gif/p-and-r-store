@@ -1,6 +1,7 @@
 export type ProductImage = { key: string; label: string; src: string };
 export type ProductCategory = "Men" | "Women";
-export type Product = { id: number; slug: string; name: string; price: number; color: string; category: ProductCategory; note: string; gallery: ProductImage[]; variantId?: number };
+export type ProductVariant = { id: number; size: string; stock: number; price?: number | null };
+export type Product = { id: number; slug: string; name: string; price: number; color: string; category: ProductCategory; note: string; gallery: ProductImage[]; variantId?: number; selectedSize?: string; variants?: ProductVariant[] };
 
 export const products: Product[] = [
   {

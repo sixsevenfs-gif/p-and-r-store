@@ -85,8 +85,17 @@ export async function listCatalog(filters: CatalogFilters = {}) {
     const id = Number(image.product_id);
     imagesByProduct.set(id, [...(imagesByProduct.get(id) ?? []), image]);
   }
+  const variants = productIds.length
+    ? await env.DB.prepare(`SELECT id,product_id,size,stock,reserved_stock,price FROM product_variants
+      WHERE product_id IN (${productIds.map(() => "?").join(",")}) AND active=1 ORDER BY product_id,size,id`).bind(...productIds).all()
+    : { results: [] as unknown[] };
+  const variantsByProduct = new Map<number, unknown[]>();
+  for (const variant of variants.results as Record<string, unknown>[]) {
+    const id = Number(variant.product_id);
+    variantsByProduct.set(id, [...(variantsByProduct.get(id) ?? []), variant]);
+  }
   return {
-    products: productRows.map((product) => ({ ...product, images: imagesByProduct.get(Number(product.id)) ?? [] })),
+    products: productRows.map((product) => ({ ...product, images: imagesByProduct.get(Number(product.id)) ?? [], variants: variantsByProduct.get(Number(product.id)) ?? [] })),
     total: Number(total?.count ?? 0), limit, offset,
   };
 }
