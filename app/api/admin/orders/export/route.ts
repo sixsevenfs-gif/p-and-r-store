@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const rows = await env.DB.prepare(`SELECT o.id,o.created_at,o.status,o.shipping_status,o.payment_status,o.payment_method,o.total_amount,o.courier,o.tracking_id,
     c.first_name,c.last_name,c.email,c.phone,o.shipping_address,group_concat(i.product_name || ' x' || i.quantity, ' | ') items
     FROM orders o JOIN customers c ON c.id=o.customer_id LEFT JOIN order_items i ON i.order_id=o.id ${status ? "WHERE o.status=?" : ""}
-    GROUP BY o.id ORDER BY o.created_at DESC LIMIT 10000`).bind(...(status ? [status] : [])).all<Record<string, unknown>>();
+    GROUP BY o.id,c.id ORDER BY o.created_at DESC LIMIT 10000`).bind(...(status ? [status] : [])).all<Record<string, unknown>>();
   const head = ["order_number", "placed_at", "customer_name", "email", "phone", "items", "total_inr", "payment_status", "fulfilment_status", "shipping_status", "courier", "tracking_awb", "shipping_address"];
   const body = rows.results.map((row) => [
     `PR${row.id}`, new Date(Number(row.created_at) * 1000).toISOString(), `${row.first_name || ""} ${row.last_name || ""}`.trim(), row.email, row.phone, row.items,

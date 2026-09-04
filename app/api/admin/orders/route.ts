@@ -58,7 +58,7 @@ export async function GET(request: Request) {
   const [rows, count] = await Promise.all([
     env.DB.prepare(`SELECT o.id,o.status,o.shipping_status,o.payment_status,o.payment_method,o.total_amount,o.payable_amount,o.tracking_id,o.courier,o.created_at,c.first_name,c.last_name,c.email,c.phone,
       count(i.id) item_count,sum(i.quantity) unit_count FROM orders o JOIN customers c ON c.id=o.customer_id LEFT JOIN order_items i ON i.order_id=o.id ${where}
-      GROUP BY o.id ORDER BY o.created_at DESC LIMIT ? OFFSET ?`).bind(...params, limit, (page - 1) * limit).all<Row>(),
+      GROUP BY o.id,c.id ORDER BY o.created_at DESC LIMIT ? OFFSET ?`).bind(...params, limit, (page - 1) * limit).all<Row>(),
     env.DB.prepare(`SELECT count(*) count FROM orders o JOIN customers c ON c.id=o.customer_id ${where}`).bind(...params).first<{ count: number }>(),
   ]);
   return Response.json({ data: rows.results, page, limit, total: Number(count?.count || 0) });
