@@ -22,8 +22,16 @@ async function createSignedSession(value: string) {
   return `${payload}.${await signature(payload)}`;
 }
 
-async function readSignedSession(cookieName: string) {
-  const token = (await cookies()).get(cookieName)?.value || "";
+function cookieFromRequest(request: Request, cookieName: string) {
+  const header = request.headers.get("cookie") || "";
+  const prefix = `${cookieName}=`;
+  return header.split(/;\s*/).find((part) => part.startsWith(prefix))?.slice(prefix.length) || "";
+}
+
+async function readSignedSession(cookieName: string, request?: Request) {
+  // Route handlers receive the browser cookie on the Request itself. Reading it
+  // from there avoids relying on request-scoped cookie state during API calls.
+  const token = request ? cookieFromRequest(request, cookieName) : (await cookies()).get(cookieName)?.value || "";
   const [value, expiresAt, receivedSignature, extra] = token.split(".");
   const expiry = Number(expiresAt);
   if (!value || extra || !Number.isInteger(expiry) || expiry < Math.floor(Date.now() / 1000)) return null;
@@ -56,8 +64,8 @@ export function isConfiguredAdminPhone(rawPhone: string) {
   return /^[6-9]\d{9}$/.test(digits) && normalizedPhones(process.env.ADMIN_PHONE_NUMBERS).has(digits);
 }
 
-export async function getAdminPhoneSession(): Promise<AdminPhoneSession | null> {
-  const digits = await readSignedSession(adminCookie);
+export async function getAdminPhoneSession(request?: Request): Promise<AdminPhoneSession | null> {
+  const digits = await readSignedSession(adminCookie, request);
   return digits && isConfiguredAdminPhone(digits) ? { phone: `+91${digits.replace(/^91/, "")}` } : null;
 }
 
