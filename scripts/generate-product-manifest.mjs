@@ -82,6 +82,7 @@ const products = directories.map((slug, index) => {
     slug,
     name: metadata.name ?? titleFromSlug(slug),
     price: metadata.price ?? 1499,
+    compareAtPrice: metadata.compareAtPrice ?? null,
     color: metadata.color ?? "White",
     category: metadata.category ?? "Men",
     note: metadata.note ?? "Oversized T-shirt with a premium everyday fit, clean construction and detailed product photography.",
@@ -100,6 +101,7 @@ const fallbackProducts = [
     slug: "heavyweight-tee-01",
     name: "Heavyweight Tee 01",
     price: 1499,
+    compareAtPrice: null,
     color: "Washed Charcoal",
     category: "Men",
     note: "240 GSM / Relaxed structure",
@@ -113,7 +115,7 @@ const fallbackProducts = [
 const source = `export type ProductImage = { key: string; label: string; src: string };
 export type ProductCategory = "Men" | "Women";
 export type ProductVariant = { id: number; size: string; stock: number; price?: number | null };
-export type Product = { id: number; slug: string; name: string; price: number; color: string; category: ProductCategory; note: string; gallery: ProductImage[]; variantId?: number; selectedSize?: string; variants?: ProductVariant[]; editionNumber?: number | null; isUniqueFind?: boolean; lifetimeProductionCap?: number | null; availableStock?: number; uniqueFindStatus?: string };
+export type Product = { id: number; slug: string; name: string; price: number; compareAtPrice?: number | null; color: string; category: ProductCategory; note: string; gallery: ProductImage[]; variantId?: number; selectedSize?: string; variants?: ProductVariant[]; editionNumber?: number | null; isUniqueFind?: boolean; lifetimeProductionCap?: number | null; availableStock?: number; uniqueFindStatus?: string };
 
 export const products: Product[] = ${JSON.stringify(products.length ? products : fallbackProducts, null, 2)};
 `;

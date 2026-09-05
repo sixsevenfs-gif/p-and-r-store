@@ -21,9 +21,9 @@ export async function ensureCatalog() {
 
   for (const product of seedProducts) {
     await env.DB.prepare(`INSERT OR IGNORE INTO products
-      (slug,name,description,short_description,price,category,color,status,sku,featured,new_arrival,edition_number)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
-      .bind(product.slug, product.name, product.note, product.note.slice(0, 180), product.price * 100,
+      (slug,name,description,short_description,price,compare_at_price,category,color,status,sku,featured,new_arrival,edition_number)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+      .bind(product.slug, product.name, product.note, product.note.slice(0, 180), product.price * 100, product.compareAtPrice ? product.compareAtPrice * 100 : null,
         product.category, product.color, "published", `PR-${String(product.id).padStart(4, "0")}`,
         product.id <= 5 ? 1 : 0, product.id <= 5 ? 1 : 0, product.id).run();
     const stored = await env.DB.prepare("SELECT id FROM products WHERE slug=?").bind(product.slug).first<{ id: number }>();

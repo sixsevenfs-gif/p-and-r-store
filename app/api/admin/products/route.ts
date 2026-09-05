@@ -21,7 +21,7 @@ function cleanProduct(raw: ProductInput) {
   const archiveNote = text(raw.archiveNote, 400);
   const uniqueReleaseAt = raw.uniqueReleaseAt ? Math.floor(new Date(String(raw.uniqueReleaseAt)).getTime() / 1000) : null;
   if (!name || !slugPattern.test(slug) || !category || !sku || !Number.isFinite(price) || !["draft", "published", "archived"].includes(status) || !["men", "women", "unisex"].includes(audience)) throw new Error("Enter a title, valid slug, category, SKU, price, audience and status.");
-  if (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < Number(price))) throw new Error("Compare-at price must be greater than or equal to the selling price.");
+  if (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice <= Number(price))) throw new Error("Original struck price must be greater than the current selling price.");
   if (costPrice !== null && !Number.isFinite(costPrice)) throw new Error("Cost price is invalid.");
   if (!Number.isInteger(editionNumber) || editionNumber < 1) throw new Error("Every product needs a unique edition number.");
   if (!variants.length || variants.length > 100) throw new Error("Add between 1 and 100 variants.");
