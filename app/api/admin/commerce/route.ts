@@ -57,9 +57,8 @@ export async function GET(request:Request) {
       env.DB.prepare(`SELECT * FROM product_images WHERE product_id IN (${placeholders}) ORDER BY product_id,sort_order,id`).bind(...ids).all(),
       env.DB.prepare(`SELECT * FROM product_variants WHERE product_id IN (${placeholders}) ORDER BY product_id,size,id`).bind(...ids).all(),
     ]) : [{results:[]},{results:[]}];
-    const origin=new URL(request.url).origin;
     for(const row of productRows){
-      row.images=(images.results as Record<string,unknown>[]).filter(image=>Number(image.product_id)===Number(row.id)).map(image=>({...image,url:String(image.url).startsWith("http")?image.url:`${origin}${image.url}`}));
+      row.images=(images.results as Record<string,unknown>[]).filter(image=>Number(image.product_id)===Number(row.id));
       row.variants=(variants.results as Record<string,unknown>[]).filter(variant=>Number(variant.product_id)===Number(row.id));
     }
   }
