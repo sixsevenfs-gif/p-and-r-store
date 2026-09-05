@@ -7,6 +7,13 @@ type ProductInput = Record<string, unknown> & { variants?: unknown; images?: unk
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const text = (value: unknown, max: number) => String(value ?? "").trim().slice(0, max);
 const paise = (value: unknown, nullable = false): number | null => { if (value === "" || value == null) return nullable ? null : NaN; const number = Math.round(Number(value) * 100); return Number.isSafeInteger(number) && number >= 0 ? number : NaN; };
+const validImageUrl = (value: string) => {
+  if (value.startsWith("/products/") || value.startsWith("/api/media/")) return true;
+  try {
+    const url = new URL(value), storage = process.env.NEXT_PUBLIC_SUPABASE_URL && new URL(process.env.NEXT_PUBLIC_SUPABASE_URL);
+    return url.protocol === "https:" && Boolean(storage && url.hostname === storage.hostname && url.pathname.startsWith("/storage/v1/object/public/"));
+  } catch { return false; }
+};
 
 function cleanProduct(raw: ProductInput) {
   const name = text(raw.name, 160), slug = text(raw.slug, 160).toLowerCase(), category = text(raw.category, 80), color = text(raw.color, 80) || "Mixed", sku = text(raw.sku, 80);
@@ -41,7 +48,7 @@ function cleanProduct(raw: ProductInput) {
   if (isUniqueFind && totalStock > Number(lifetimeProductionCap ?? 0)) throw new Error(`Variant stock (${totalStock}) cannot exceed the lifetime cap of ${lifetimeProductionCap}.`);
   if (!isUniqueFind && lifetimeProductionCap !== null) throw new Error("Lifetime production cap is only available for Unique Finds.");
   if (!['available', 'closed', 'scheduled'].includes(uniqueFindStatus)) throw new Error("Invalid Unique Find release status.");
-  const cleanImages = images.map((image, index) => ({ url: text(image.url, 500), altText: text(image.altText, 180), sortOrder: Number.isInteger(Number(image.sortOrder)) ? Number(image.sortOrder) : index })).filter((image) => image.url.startsWith("/api/media/"));
+  const cleanImages = images.map((image, index) => ({ url: text(image.url, 500), altText: text(image.altText, 180), sortOrder: Number.isInteger(Number(image.sortOrder)) ? Number(image.sortOrder) : index })).filter((image) => validImageUrl(image.url));
   return { name, slug, category, color, sku, price, compareAtPrice, costPrice, status, audience, productType, taxStatus, editionNumber, isUniqueFind, lifetimeProductionCap, uniqueFindStatus: isUniqueFind ? uniqueFindStatus : "available", archiveNote, keepVisibleAfterSellout: raw.keepVisibleAfterSellout !== false, uniqueReleaseAt: Number.isFinite(uniqueReleaseAt) ? uniqueReleaseAt : null, totalStock, description: text(raw.description, 7000), shortDescription: text(raw.shortDescription, 300), tags: Array.isArray(raw.tags) ? JSON.stringify(raw.tags.map((tag) => text(tag, 40)).filter(Boolean).slice(0, 30)) : "[]", seoTitle: text(raw.seoTitle, 160), seoDescription: text(raw.seoDescription, 320), featured: raw.featured === true, newArrival: raw.newArrival === true, variants: cleanVariants, images: cleanImages };
 }
 async function audit(email: string, action: string, id: number, detail: unknown) { await env.DB.prepare("INSERT INTO audit_logs(admin_email,action,resource,resource_id,detail) VALUES(?,?,?,?,?)").bind(email, action, "products", String(id), JSON.stringify(detail)).run(); }
@@ -86,15 +93,23 @@ export async function PUT(request: Request) {
       const duplicateVariant = await env.DB.prepare(`SELECT sku FROM product_variants WHERE sku IN (${placeholders}) AND product_id<>? LIMIT 1`).bind(...skuList, id).first<{ sku: string }>();
       if (duplicateVariant) return Response.json({ error: `Variant SKU ${duplicateVariant.sku} already exists on another product.` }, { status: 409 });
     }
-    const currentVariants = await env.DB.prepare("SELECT id,stock FROM product_variants WHERE product_id=?").bind(id).all<{ id: number; stock: number }>();
+    const [currentVariants, currentImages] = await Promise.all([
+      env.DB.prepare("SELECT id,stock FROM product_variants WHERE product_id=?").bind(id).all<{ id: number; stock: number }>(),
+      env.DB.prepare("SELECT id FROM product_images WHERE product_id=? LIMIT 1").bind(id).all(),
+    ]);
+    if (currentImages.results.length && !product.images.length && Array.isArray(body.images) && body.images.length) throw new Error("Existing product images could not be validated, so the update was stopped to protect the gallery.");
     const currentIds = new Set(currentVariants.results.map((variant) => Number(variant.id)));
     const currentStock = new Map(currentVariants.results.map((variant) => [Number(variant.id), Number(variant.stock)]));
     const keptVariantIds = product.variants.map((variant) => variant.id).filter((variantId): variantId is number => Boolean(variantId && currentIds.has(variantId)));
     const statements: D1PreparedStatement[] = [
       env.DB.prepare(`UPDATE products SET slug=?,name=?,description=?,short_description=?,price=?,compare_at_price=?,cost_price=?,category=?,color=?,status=?,sku=?,featured=?,new_arrival=?,audience=?,product_type=?,tags=?,seo_title=?,seo_description=?,tax_status=?,edition_number=?,is_unique_find=?,lifetime_production_cap=?,total_units_created=greatest(total_units_created,?),unique_find_status=?,archive_note=?,keep_visible_after_sellout=?,unique_release_at=?,updated_at=unixepoch() WHERE id=?`).bind(product.slug, product.name, product.description, product.shortDescription, product.price, product.compareAtPrice, product.costPrice, product.category, product.color, product.status, product.sku, Number(product.featured), Number(product.newArrival), product.audience, product.productType, product.tags, product.seoTitle, product.seoDescription, product.taxStatus, product.editionNumber, Number(product.isUniqueFind), product.lifetimeProductionCap, product.isUniqueFind ? product.totalStock : 0, product.uniqueFindStatus, product.archiveNote, Number(product.keepVisibleAfterSellout), product.uniqueReleaseAt, id),
-      env.DB.prepare("DELETE FROM product_images WHERE product_id=?").bind(id),
-      ...product.images.map((image) => env.DB.prepare("INSERT INTO product_images(product_id,url,alt_text,sort_order) VALUES(?,?,?,?)").bind(id, image.url, image.altText, image.sortOrder)),
     ];
+    if (Array.isArray(body.images)) {
+      statements.push(
+        env.DB.prepare("DELETE FROM product_images WHERE product_id=?").bind(id),
+        ...product.images.map((image) => env.DB.prepare("INSERT INTO product_images(product_id,url,alt_text,sort_order) VALUES(?,?,?,?)").bind(id, image.url, image.altText, image.sortOrder)),
+      );
+    }
     if (keptVariantIds.length) {
       statements.push(env.DB.prepare(`UPDATE product_variants SET active=0 WHERE product_id=? AND id NOT IN (${keptVariantIds.map(() => "?").join(",")})`).bind(id, ...keptVariantIds));
     } else {
