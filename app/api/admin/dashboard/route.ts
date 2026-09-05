@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const range = [7, 30, 90].includes(requestedRange) ? requestedRange : 7;
   const endAt = Math.floor(Date.now() / 1000), startAt = daysAgo(range - 1), previousStartAt = daysAgo(range * 2 - 1), previousEndAt = startAt - 1;
   const currentWindow = `created_at>=${startAt} AND created_at<=${endAt}`, previousWindow = `created_at>=${previousStartAt} AND created_at<=${previousEndAt}`;
-  const [revenue, previousRevenue, orders, previousOrders, customers, previousCustomers, lowStock, productCount, statuses, recentOrders, lowStockItems, topProducts, notifications] = await Promise.all([
+  const [revenue, previousRevenue, orders, previousOrders, customers, previousCustomers, lowStock, productCount, statuses, recentOrders, lowStockItems, topProducts, notifications, dailySales] = await Promise.all([
     env.DB.prepare(`SELECT coalesce(sum(total_amount),0) value FROM orders WHERE ${validRevenue} AND ${currentWindow}`).first<NumberRow>(),
     env.DB.prepare(`SELECT coalesce(sum(total_amount),0) value FROM orders WHERE ${validRevenue} AND ${previousWindow}`).first<NumberRow>(),
     env.DB.prepare(`SELECT count(*) value FROM orders WHERE ${currentWindow}`).first<NumberRow>(), env.DB.prepare(`SELECT count(*) value FROM orders WHERE ${previousWindow}`).first<NumberRow>(),
@@ -25,12 +25,10 @@ export async function GET(request: Request) {
     env.DB.prepare(`SELECT v.id,v.size,v.color,v.stock,v.reserved_stock,v.low_stock_threshold,p.id product_id,p.name,(SELECT url FROM product_images WHERE product_id=p.id ORDER BY sort_order ASC LIMIT 1) image_url FROM product_variants v JOIN products p ON p.id=v.product_id WHERE v.active=1 AND v.stock-v.reserved_stock<=v.low_stock_threshold ORDER BY (v.stock-v.reserved_stock) ASC,p.name ASC LIMIT 6`).all(),
     env.DB.prepare(`SELECT oi.product_name,sum(oi.quantity) units FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE ${validRevenue} AND ${currentWindow.replaceAll("created_at", "o.created_at")} GROUP BY oi.product_name ORDER BY units DESC LIMIT 5`).all(),
     env.DB.prepare("SELECT (SELECT count(*) FROM product_variants WHERE active=1 AND stock-reserved_stock<=low_stock_threshold) + (SELECT count(*) FROM reviews WHERE status='pending') + (SELECT count(*) FROM returns WHERE decision_status='requested') value").first<NumberRow>(),
+    env.DB.prepare(`SELECT to_char(to_timestamp(created_at),'YYYY-MM-DD') date,coalesce(sum(total_amount),0) revenue FROM orders WHERE ${validRevenue} AND ${currentWindow} GROUP BY date ORDER BY date`).all<{date:string;revenue:number}>(),
   ]);
-  const sales = await Promise.all(Array.from({ length: range }, async (_, index) => {
-    const dayStart = startAt + index * 86_400;
-    const row = await env.DB.prepare(`SELECT coalesce(sum(total_amount),0) value FROM orders WHERE ${validRevenue} AND created_at>=? AND created_at<?`).bind(dayStart, dayStart + 86_400).first<NumberRow>();
-    return { date: new Date(dayStart * 1000).toISOString().slice(0, 10), revenue: number(row) };
-  }));
+  const revenueByDate = new Map((dailySales.results as {date:string;revenue:number}[]).map((row) => [row.date, Number(row.revenue)]));
+  const sales = Array.from({ length: range }, (_, index) => { const date = new Date((startAt + index * 86_400) * 1000).toISOString().slice(0, 10); return { date, revenue: revenueByDate.get(date) || 0 }; });
   const rawStatuses = new Map((statuses.results as { status: string; count: number }[]).map((item) => [String(item.status).toLowerCase(), Number(item.count)]));
   const orderStatuses = Object.entries(statusGroups).map(([label, values]) => ({ label, count: values.reduce((sum, status) => sum + (rawStatuses.get(status) || 0), 0) }));
   const comparison = (current: number, previous: number) => previous > 0 ? Math.round(((current - previous) / previous) * 1000) / 10 : null;

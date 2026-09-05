@@ -36,6 +36,7 @@ async function ensureProducts() {
 
 export async function GET(request:Request) {
   if(!(await requireAdmin(request)))return Response.json({error:"Admin access required"},{status:403});
+  try {
   const url=new URL(request.url), resource=url.searchParams.get("resource")??"products";
   if(!allowedResources.has(resource))return Response.json({error:"Unknown resource"},{status:400});
   if(resource==="products") await ensureProducts();
@@ -49,14 +50,24 @@ export async function GET(request:Request) {
     env.DB.prepare(`SELECT count(*) count FROM ${resource}${where}`).bind(...(q?[`%${q}%`]:[])).first<{count:number}>(),
   ]);
   if(resource==="products"){
-    for(const row of rows.results as Record<string,unknown>[]){
-      row.images=(await env.DB.prepare("SELECT * FROM product_images WHERE product_id=? ORDER BY sort_order").bind(row.id).all()).results;
-      const origin=new URL(request.url).origin;
-      row.images=(row.images as Record<string,unknown>[]).map(image=>({...image,url:String(image.url).startsWith("http")?image.url:`${origin}${image.url}`}));
-      row.variants=(await env.DB.prepare("SELECT * FROM product_variants WHERE product_id=? ORDER BY size").bind(row.id).all()).results;
+    const productRows=rows.results as Record<string,unknown>[];
+    const ids=productRows.map((row)=>Number(row.id)).filter(Number.isInteger);
+    const placeholders=ids.map(()=>"?").join(",");
+    const [images,variants]=ids.length ? await Promise.all([
+      env.DB.prepare(`SELECT * FROM product_images WHERE product_id IN (${placeholders}) ORDER BY product_id,sort_order,id`).bind(...ids).all(),
+      env.DB.prepare(`SELECT * FROM product_variants WHERE product_id IN (${placeholders}) ORDER BY product_id,size,id`).bind(...ids).all(),
+    ]) : [{results:[]},{results:[]}];
+    const origin=new URL(request.url).origin;
+    for(const row of productRows){
+      row.images=(images.results as Record<string,unknown>[]).filter(image=>Number(image.product_id)===Number(row.id)).map(image=>({...image,url:String(image.url).startsWith("http")?image.url:`${origin}${image.url}`}));
+      row.variants=(variants.results as Record<string,unknown>[]).filter(variant=>Number(variant.product_id)===Number(row.id));
     }
   }
-  return Response.json({data:rows.results,total:Number(total?.count||0),page,limit});
+    return Response.json({data:rows.results,total:Number(total?.count||0),page,limit});
+  } catch (error) {
+    console.error("Admin commerce load failed", error);
+    return Response.json({error:"Unable to load admin data. Please retry."},{status:500});
+  }
 }
 
 export async function POST(request:Request) {

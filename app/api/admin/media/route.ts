@@ -5,6 +5,7 @@ const BUCKET = "product-images";
 
 export async function GET(request: Request) {
   if (!(await requireAdmin(request))) return Response.json({ error: "Admin access required" }, { status: 403 });
+  try {
   const url = new URL(request.url);
   const q = (url.searchParams.get("q") || "").slice(0, 100);
   const filter = url.searchParams.get("filter") || "all";
@@ -13,7 +14,11 @@ export async function GET(request: Request) {
   query = filter === "trash" ? query.not("trashed_at", "is", null) : query.is("trashed_at", null);
   if (q) query = query.or(`filename.ilike.%${q.replaceAll(",", "")}%,display_name.ilike.%${q.replaceAll(",", "")}%,alt_text.ilike.%${q.replaceAll(",", "")}%`);
   const { data, error } = await query;
-  return error ? Response.json({ error: error.message }, { status: 400 }) : Response.json({ data: data?.map((row) => ({ ...row, usage_count: 0 })) });
+    return error ? Response.json({ error: error.message }, { status: 400 }) : Response.json({ data: data?.map((row) => ({ ...row, usage_count: 0 })) });
+  } catch (error) {
+    console.error("Admin media load failed", error);
+    return Response.json({ error: "Unable to load media. Please retry." }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
