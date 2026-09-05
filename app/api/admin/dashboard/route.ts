@@ -2,6 +2,7 @@ import { env } from "@/db/runtime";
 import { requireAdmin } from "../../_lib/admin";
 
 type NumberRow = { value: number | null };
+type MetricsRow = { revenue:number;previous_revenue:number;orders:number;previous_orders:number;customers:number;previous_customers:number;low_stock:number;products:number;notifications:number };
 const validRevenue = "(payment_status='paid' OR status IN ('confirmed','packed','shipped','delivered')) AND status NOT IN ('cancelled','returned','failed')";
 const statusGroups: Record<string, string[]> = { paid: ["confirmed"], processing: ["pending", "awaiting_payment", "packed"], shipped: ["shipped"], delivered: ["delivered"], cancelled: ["cancelled", "returned", "failed", "return_requested"] };
 const number = (row: NumberRow | null | undefined) => Number(row?.value ?? 0);
@@ -14,17 +15,22 @@ export async function GET(request: Request) {
   const range = [7, 30, 90].includes(requestedRange) ? requestedRange : 7;
   const endAt = Math.floor(Date.now() / 1000), startAt = daysAgo(range - 1), previousStartAt = daysAgo(range * 2 - 1), previousEndAt = startAt - 1;
   const currentWindow = `created_at>=${startAt} AND created_at<=${endAt}`, previousWindow = `created_at>=${previousStartAt} AND created_at<=${previousEndAt}`;
-  const [revenue, previousRevenue, orders, previousOrders, customers, previousCustomers, lowStock, productCount, statuses, recentOrders, lowStockItems, topProducts, notifications, dailySales] = await Promise.all([
-    env.DB.prepare(`SELECT coalesce(sum(total_amount),0) value FROM orders WHERE ${validRevenue} AND ${currentWindow}`).first<NumberRow>(),
-    env.DB.prepare(`SELECT coalesce(sum(total_amount),0) value FROM orders WHERE ${validRevenue} AND ${previousWindow}`).first<NumberRow>(),
-    env.DB.prepare(`SELECT count(*) value FROM orders WHERE ${currentWindow}`).first<NumberRow>(), env.DB.prepare(`SELECT count(*) value FROM orders WHERE ${previousWindow}`).first<NumberRow>(),
-    env.DB.prepare(`SELECT count(*) value FROM customers WHERE status='active' AND ${currentWindow.replaceAll("created_at", "customers.created_at")}`).first<NumberRow>(), env.DB.prepare(`SELECT count(*) value FROM customers WHERE status='active' AND ${previousWindow.replaceAll("created_at", "customers.created_at")}`).first<NumberRow>(),
-    env.DB.prepare("SELECT count(*) value FROM product_variants WHERE active=1 AND stock-reserved_stock<=low_stock_threshold").first<NumberRow>(), env.DB.prepare("SELECT count(*) value FROM products WHERE status!='archived'").first<NumberRow>(),
+  const [metrics, statuses, recentOrders, lowStockItems, dailySales] = await Promise.all([
+    env.DB.prepare(`SELECT
+      (SELECT coalesce(sum(total_amount),0) FROM orders WHERE ${validRevenue} AND ${currentWindow}) revenue,
+      (SELECT coalesce(sum(total_amount),0) FROM orders WHERE ${validRevenue} AND ${previousWindow}) previous_revenue,
+      (SELECT count(*) FROM orders WHERE ${currentWindow}) orders,
+      (SELECT count(*) FROM orders WHERE ${previousWindow}) previous_orders,
+      (SELECT count(*) FROM customers WHERE status='active' AND ${currentWindow}) customers,
+      (SELECT count(*) FROM customers WHERE status='active' AND ${previousWindow}) previous_customers,
+      (SELECT count(*) FROM product_variants WHERE active=1 AND stock-reserved_stock<=low_stock_threshold) low_stock,
+      (SELECT count(*) FROM products WHERE status!='archived') products,
+      (SELECT count(*) FROM product_variants WHERE active=1 AND stock-reserved_stock<=low_stock_threshold) +
+      (SELECT count(*) FROM reviews WHERE status='pending') +
+      (SELECT count(*) FROM returns WHERE decision_status='requested') notifications`).first<MetricsRow>(),
     env.DB.prepare("SELECT status,count(*) count FROM orders GROUP BY status").all<{ status: string; count: number }>(),
     env.DB.prepare(`SELECT o.id,o.total_amount,o.payment_method,o.payment_status,o.status,o.created_at,c.first_name,c.last_name,c.email,count(oi.id) item_count FROM orders o JOIN customers c ON c.id=o.customer_id LEFT JOIN order_items oi ON oi.order_id=o.id GROUP BY o.id,c.id ORDER BY o.created_at DESC LIMIT 8`).all(),
     env.DB.prepare(`SELECT v.id,v.size,v.color,v.stock,v.reserved_stock,v.low_stock_threshold,p.id product_id,p.name,(SELECT url FROM product_images WHERE product_id=p.id ORDER BY sort_order ASC LIMIT 1) image_url FROM product_variants v JOIN products p ON p.id=v.product_id WHERE v.active=1 AND v.stock-v.reserved_stock<=v.low_stock_threshold ORDER BY (v.stock-v.reserved_stock) ASC,p.name ASC LIMIT 6`).all(),
-    env.DB.prepare(`SELECT oi.product_name,sum(oi.quantity) units FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE ${validRevenue} AND ${currentWindow.replaceAll("created_at", "o.created_at")} GROUP BY oi.product_name ORDER BY units DESC LIMIT 5`).all(),
-    env.DB.prepare("SELECT (SELECT count(*) FROM product_variants WHERE active=1 AND stock-reserved_stock<=low_stock_threshold) + (SELECT count(*) FROM reviews WHERE status='pending') + (SELECT count(*) FROM returns WHERE decision_status='requested') value").first<NumberRow>(),
     env.DB.prepare(`SELECT to_char(to_timestamp(created_at),'YYYY-MM-DD') date,coalesce(sum(total_amount),0) revenue FROM orders WHERE ${validRevenue} AND ${currentWindow} GROUP BY date ORDER BY date`).all<{date:string;revenue:number}>(),
   ]);
   const revenueByDate = new Map((dailySales.results as {date:string;revenue:number}[]).map((row) => [row.date, Number(row.revenue)]));
@@ -32,5 +38,6 @@ export async function GET(request: Request) {
   const rawStatuses = new Map((statuses.results as { status: string; count: number }[]).map((item) => [String(item.status).toLowerCase(), Number(item.count)]));
   const orderStatuses = Object.entries(statusGroups).map(([label, values]) => ({ label, count: values.reduce((sum, status) => sum + (rawStatuses.get(status) || 0), 0) }));
   const comparison = (current: number, previous: number) => previous > 0 ? Math.round(((current - previous) / previous) * 1000) / 10 : null;
-  return Response.json({ range, startAt, endAt, metrics: { revenue: number(revenue), orders: number(orders), customers: number(customers), lowStock: number(lowStock), products: number(productCount), comparisons: { revenue: comparison(number(revenue), number(previousRevenue)), orders: comparison(number(orders), number(previousOrders)), customers: comparison(number(customers), number(previousCustomers)) } }, sales, orderStatuses, recentOrders: recentOrders.results, lowStockItems: lowStockItems.results, topProducts: topProducts.results, notificationCount: number(notifications) });
+  const values=metrics ?? {revenue:0,previous_revenue:0,orders:0,previous_orders:0,customers:0,previous_customers:0,low_stock:0,products:0,notifications:0};
+  return Response.json({ range, startAt, endAt, metrics: { revenue: Number(values.revenue), orders: Number(values.orders), customers: Number(values.customers), lowStock: Number(values.low_stock), products: Number(values.products), comparisons: { revenue: comparison(Number(values.revenue), Number(values.previous_revenue)), orders: comparison(Number(values.orders), Number(values.previous_orders)), customers: comparison(Number(values.customers), Number(values.previous_customers)) } }, sales, orderStatuses, recentOrders: recentOrders.results, lowStockItems: lowStockItems.results, topProducts: [], notificationCount: Number(values.notifications) });
 }
