@@ -38,7 +38,7 @@ export async function PATCH(request: Request) {
   const reason = clean(body.reason, 300);
   if (!Number.isInteger(id) || id < 1) return Response.json({ error: "A valid variant is required." }, { status: 400 });
   if (!reason) return Response.json({ error: "Inventory adjustments require a reason for the audit trail." }, { status: 400 });
-  const variant = await env.DB.prepare("SELECT id,stock,reserved_stock FROM product_variants WHERE id=? AND active=1").bind(id).first<{ id: number; stock: number; reserved_stock: number }>();
+  const variant = await env.DB.prepare("SELECT v.id,v.stock,v.reserved_stock,v.product_id,p.is_unique_find,p.lifetime_production_cap FROM product_variants v JOIN products p ON p.id=v.product_id WHERE v.id=? AND v.active=1").bind(id).first<{ id: number; stock: number; reserved_stock: number; product_id:number; is_unique_find:number; lifetime_production_cap:number | null }>();
   if (!variant) return Response.json({ error: "Variant not found." }, { status: 404 });
   const mode = clean(body.mode, 20);
   const quantity = Math.floor(Number(body.quantity));
@@ -46,6 +46,10 @@ export async function PATCH(request: Request) {
   const nextStock = mode === "set" ? quantity : mode === "increase" ? variant.stock + quantity : mode === "decrease" ? variant.stock - quantity : NaN;
   if (!Number.isInteger(nextStock) || nextStock < 0) return Response.json({ error: "Inventory cannot be reduced below zero." }, { status: 400 });
   if (nextStock < variant.reserved_stock) return Response.json({ error: "Stock cannot be lower than the quantity already reserved for open carts/orders." }, { status: 409 });
+  if (variant.is_unique_find) {
+    const other = await env.DB.prepare("SELECT coalesce(sum(stock),0) AS stock FROM product_variants WHERE product_id=? AND id<>? AND active=1").bind(variant.product_id, id).first<{ stock:number }>();
+    if (nextStock + Number(other?.stock ?? 0) > Number(variant.lifetime_production_cap)) return Response.json({ error: `Unique Find inventory cannot exceed its permanent cap of ${variant.lifetime_production_cap}.` }, { status: 409 });
+  }
   const delta = nextStock - variant.stock;
   if (delta === 0) return Response.json({ updated: false, stock: variant.stock });
   await env.DB.batch([

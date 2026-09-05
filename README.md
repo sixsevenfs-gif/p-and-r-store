@@ -41,6 +41,10 @@ WebP, and AVIF. Run these files in Dashboard > SQL Editor, in order:
 Run `supabase/migrations/0003_phone_members.sql` as well. Customer members use
 their name and Indian mobile number; no email, password, or OTP is required.
 
+Run `supabase/migrations/0004_product_editions_unique_finds.sql` before using
+numbered editions or Unique Finds. It adds the edition fields, the permanent
+1–5 piece limit, order snapshots, and expiring server-side reservations.
+
 Admin access is separate. Add the store owner's number to
 `ADMIN_PHONE_NUMBERS` in both `.env.local` and Render, for example:
 

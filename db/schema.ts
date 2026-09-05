@@ -133,6 +133,8 @@ export const orderItems = sqliteTable("order_items", {
   size: text("size").notNull(),
   color: text("color").notNull().default(""),
   variantId: integer("variant_id"),
+  editionNumber: integer("edition_number"),
+  isUniqueFind: integer("is_unique_find", { mode: "boolean" }).notNull().default(false),
 });
 
 /**
@@ -163,6 +165,15 @@ export const products = sqliteTable("products", {
   taxStatus: text("tax_status").notNull().default("taxable"),
   sku: text("sku").notNull().unique(),
   collectionIds: text("collection_ids").notNull().default("[]"),
+  editionNumber: integer("edition_number"),
+  isUniqueFind: integer("is_unique_find", { mode: "boolean" }).notNull().default(false),
+  lifetimeProductionCap: integer("lifetime_production_cap"),
+  totalUnitsCreated: integer("total_units_created").notNull().default(0),
+  uniqueFindStatus: text("unique_find_status").notNull().default("available"),
+  archiveDate: integer("archive_date", { mode: "timestamp" }),
+  archiveNote: text("archive_note").notNull().default(""),
+  keepVisibleAfterSellout: integer("keep_visible_after_sellout", { mode: "boolean" }).notNull().default(true),
+  uniqueReleaseAt: integer("unique_release_at", { mode: "timestamp" }),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 }, (table) => [index("products_catalog_idx").on(table.status, table.category)]);
@@ -280,6 +291,20 @@ export const coupons = sqliteTable("coupons", {
   usageCount: integer("usage_count").notNull().default(0),
   status: text("status").notNull().default("draft"),
   description: text("description").notNull().default(""), firstOrderOnly: integer("first_order_only", { mode: "boolean" }).notNull().default(false), paymentMethods: text("payment_methods").notNull().default("[]"),
+});
+
+export const uniqueFindReservations = sqliteTable("unique_find_reservations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  customerId: integer("customer_id").notNull().references(() => customers.id),
+  cartId: integer("cart_id").notNull().references(() => carts.id),
+  productId: integer("product_id").notNull().references(() => products.id),
+  variantId: integer("variant_id").notNull().references(() => productVariants.id),
+  quantity: integer("quantity").notNull().default(1),
+  status: text("status").notNull().default("active"),
+  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  idempotencyKey: text("idempotency_key").notNull().unique(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 });
 
 export const couponUsages = sqliteTable("coupon_usages", {

@@ -99,8 +99,12 @@ export async function PATCH(request:Request) {
   if (resource === "product_variants" && data.stock !== undefined) {
     const stock = Math.max(0, Math.floor(Number(data.stock)));
     if (!Number.isFinite(stock)) return Response.json({ error: "Invalid stock quantity." }, { status: 400 });
-    const variant = await env.DB.prepare("SELECT stock FROM product_variants WHERE id=?").bind(id).first<{ stock:number }>();
+    const variant = await env.DB.prepare("SELECT v.stock,v.product_id,p.is_unique_find,p.lifetime_production_cap FROM product_variants v JOIN products p ON p.id=v.product_id WHERE v.id=?").bind(id).first<{ stock:number;product_id:number;is_unique_find:number;lifetime_production_cap:number|null }>();
     if (!variant) return Response.json({ error: "Variant not found." }, { status: 404 });
+    if (variant.is_unique_find) {
+      const other=await env.DB.prepare("SELECT coalesce(sum(stock),0) AS stock FROM product_variants WHERE product_id=? AND id<>? AND active=1").bind(variant.product_id,id).first<{stock:number}>();
+      if(stock+Number(other?.stock??0)>Number(variant.lifetime_production_cap)) return Response.json({error:`Unique Find inventory cannot exceed its permanent cap of ${variant.lifetime_production_cap}.`},{status:409});
+    }
     await env.DB.batch([
       env.DB.prepare("UPDATE product_variants SET stock=? WHERE id=?").bind(stock, id),
       env.DB.prepare("INSERT INTO inventory_movements(variant_id,delta,reason,admin_email) VALUES (?,?,?,?)").bind(id, stock - variant.stock, "Admin stock adjustment", email),

@@ -29,7 +29,7 @@ async function detailFor(orderId: number, request: Request) {
     FROM orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=?`).bind(orderId).first<Row>();
   if (!order) return null;
   const [items, timeline, notes, payments] = await Promise.all([
-    env.DB.prepare(`SELECT i.*,v.sku variant_sku,p.sku product_sku,(SELECT url FROM product_images WHERE product_id=p.id ORDER BY sort_order,id LIMIT 1) image_url
+    env.DB.prepare(`SELECT i.*,p.edition_number current_edition_number,v.sku variant_sku,p.sku product_sku,(SELECT url FROM product_images WHERE product_id=p.id ORDER BY sort_order,id LIMIT 1) image_url
       FROM order_items i LEFT JOIN product_variants v ON v.id=i.variant_id LEFT JOIN products p ON p.slug=i.product_slug WHERE i.order_id=? ORDER BY i.id`).bind(orderId).all<Row>(),
     env.DB.prepare("SELECT id,event_type,public_title,public_description,internal_description,actor_email,created_at FROM order_timeline WHERE order_id=? ORDER BY created_at,id").bind(orderId).all<Row>(),
     env.DB.prepare("SELECT id,note,admin_email,created_at FROM order_notes WHERE order_id=? ORDER BY created_at,id DESC").bind(orderId).all<Row>(),
@@ -108,7 +108,7 @@ export async function PATCH(request: Request) {
       }
       writes.push(env.DB.prepare("UPDATE orders SET inventory_restored_at=unixepoch() WHERE id=? AND inventory_restored_at IS NULL").bind(orderId));
     }
-    await env.DB.batch(writes); await audit(admin.email, "order_status", orderId, { from: current, to: next, stockRestored: next === "cancelled" && !order.inventory_restored_at });
+    await env.DB.batch(writes); if (next === "cancelled") await env.DB.prepare(`UPDATE products SET unique_find_status='available' WHERE is_unique_find=1 AND id IN (SELECT v.product_id FROM product_variants v JOIN order_items i ON i.variant_id=v.id WHERE i.order_id=? AND i.is_unique_find=1) AND EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id=products.id AND v.active=1 AND v.stock-v.reserved_stock>0)`).bind(orderId).run(); await audit(admin.email, "order_status", orderId, { from: current, to: next, stockRestored: next === "cancelled" && !order.inventory_restored_at });
   } else if (action === "payment") {
     const status = clean(body.paymentStatus, 40).toLowerCase();
     if (!paymentStatuses.has(status)) return Response.json({ error: "Invalid payment status." }, { status: 400 });

@@ -3,11 +3,12 @@ import { requireApiCustomer } from "../_lib/account";
 import { ensureCatalog } from "../_lib/catalog";
 import { getAuthSession } from "../../auth";
 import { normalizeIndianPhone } from "../_lib/account";
+import { releaseExpiredUniqueReservations } from "../_lib/unique-finds";
 
 const pinPattern = /^\d{6}$/;
 const paymentMethods = new Set(["cod", "razorpay"]);
 type IncomingItem = { variantId?: number; productSlug?: string; size?: string; quantity?: number };
-type Line = { variantId:number; slug:string; name:string; size:string; color:string; unitPrice:number; quantity:number };
+type Line = { variantId:number; slug:string; name:string; size:string; color:string; unitPrice:number; quantity:number; editionNumber:number|null; isUniqueFind:boolean; reservationId:number|null };
 const clean = (value: unknown, max: number) => String(value ?? "").trim().slice(0, max);
 
 async function discountFor(code: string, subtotal: number, customerId: number) {
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
     const signedInCustomer = session?.user ? await requireApiCustomer(request) : null;
 
     await ensureCatalog();
+    await releaseExpiredUniqueReservations();
     await env.DB.prepare(`INSERT INTO customers(email,first_name,last_name,address,city,pin_code,phone,referral_code) VALUES (?,?,?,?,?,?,?,?)
       ON CONFLICT(email) DO UPDATE SET first_name=excluded.first_name,last_name=excluded.last_name,address=excluded.address,city=excluded.city,pin_code=excluded.pin_code,phone=excluded.phone,updated_at=unixepoch()`)
       .bind(email, firstName, lastName, address, city, pinCode, phone, `GUEST${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`).run();
@@ -62,11 +64,13 @@ export async function POST(request: Request) {
     const lines: Line[] = [];
     for (const { item, quantity } of requested.values()) {
       const byId = Number.isInteger(item.variantId);
-      const row = await env.DB.prepare(`SELECT v.id variant_id,v.size,v.color,v.stock,v.reserved_stock,v.price variant_price,p.slug,p.name,p.price,p.status
+      const row = await env.DB.prepare(`SELECT v.id variant_id,v.size,v.color,v.stock,v.reserved_stock,v.price variant_price,p.slug,p.name,p.price,p.status,p.edition_number,p.is_unique_find,p.unique_find_status,
+        (SELECT id FROM unique_find_reservations r WHERE r.customer_id=? AND r.variant_id=v.id AND r.status='active' AND r.expires_at>unixepoch() ORDER BY r.id DESC LIMIT 1) reservation_id
         FROM product_variants v JOIN products p ON p.id=v.product_id WHERE ${byId ? "v.id=?" : "p.slug=? AND v.size=?"} AND v.active=1 AND p.status='published'`)
-        .bind(...(byId ? [Number(item.variantId)] : [clean(item.productSlug, 120), clean(item.size, 16)])).first<Record<string, unknown>>();
-      if (!row || Number(row.stock) - Number(row.reserved_stock) < quantity) return Response.json({ error: "One of your selected sizes just sold out. Refresh your bag and try again." }, { status: 409 });
-      lines.push({ variantId:Number(row.variant_id), slug:String(row.slug), name:String(row.name), size:String(row.size), color:String(row.color), unitPrice:Number(row.variant_price ?? row.price), quantity });
+        .bind(customer.id, ...(byId ? [Number(item.variantId)] : [clean(item.productSlug, 120), clean(item.size, 16)])).first<Record<string, unknown>>();
+      const unique = Boolean(row?.is_unique_find);
+      if (!row || (unique ? (!row.reservation_id || quantity !== 1 || row.unique_find_status === "closed") : Number(row.stock) - Number(row.reserved_stock) < quantity)) return Response.json({ error: unique ? "THE HOLD HAS ENDED. This limited T-shirt is available again for someone else." : "One of your selected sizes just sold out. Refresh your bag and try again." }, { status: 409 });
+      lines.push({ variantId:Number(row.variant_id), slug:String(row.slug), name:String(row.name), size:String(row.size), color:String(row.color), unitPrice:Number(row.variant_price ?? row.price), quantity, editionNumber: row.edition_number == null ? null : Number(row.edition_number), isUniqueFind: unique, reservationId: row.reservation_id == null ? null : Number(row.reservation_id) });
     }
     const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
     const coupon = await discountFor(clean(body.couponCode, 48), subtotal, customer.id);
@@ -89,7 +93,9 @@ export async function POST(request: Request) {
     orderId = Number(result.meta.last_row_id);
     if (!orderId) throw new Error("Order creation failed.");
     for (const line of lines) {
-      const changed = await env.DB.prepare("UPDATE product_variants SET stock=stock-? WHERE id=? AND active=1 AND stock-reserved_stock>=?").bind(line.quantity, line.variantId, line.quantity).run();
+      const changed = line.isUniqueFind
+        ? await env.DB.prepare("UPDATE product_variants SET stock=stock-?,reserved_stock=reserved_stock-? WHERE id=? AND active=1 AND stock>=? AND reserved_stock>=?").bind(line.quantity, line.quantity, line.variantId, line.quantity, line.quantity).run()
+        : await env.DB.prepare("UPDATE product_variants SET stock=stock-? WHERE id=? AND active=1 AND stock-reserved_stock>=?").bind(line.quantity, line.variantId, line.quantity).run();
       if (Number(changed.meta.changes ?? 0) !== 1) throw new Error("A selected item is no longer in stock.");
       decremented.push(line);
     }
@@ -102,7 +108,9 @@ export async function POST(request: Request) {
       walletDebit = { customerId: customer.id, amount: walletPaise };
     }
     const writes = [
-      ...lines.map((line) => env.DB.prepare("INSERT INTO order_items(order_id,product_slug,product_name,unit_price,quantity,size,color,variant_id) VALUES (?,?,?,?,?,?,?,?)").bind(orderId, line.slug, line.name, line.unitPrice, line.quantity, line.size, line.color, line.variantId)),
+      ...lines.map((line) => env.DB.prepare("INSERT INTO order_items(order_id,product_slug,product_name,unit_price,quantity,size,color,variant_id,edition_number,is_unique_find) VALUES (?,?,?,?,?,?,?,?,?,?)").bind(orderId, line.slug, line.name, line.unitPrice, line.quantity, line.size, line.color, line.variantId, line.editionNumber, Number(line.isUniqueFind))),
+      ...lines.filter((line) => line.reservationId).map((line) => env.DB.prepare("UPDATE unique_find_reservations SET status='converted',updated_at=unixepoch() WHERE id=? AND status='active'").bind(line.reservationId)),
+      ...lines.filter((line) => line.isUniqueFind).map((line) => env.DB.prepare("UPDATE products SET unique_find_status=CASE WHEN NOT EXISTS (SELECT 1 FROM product_variants WHERE product_id=products.id AND active=1 AND stock-reserved_stock>0) THEN 'closed' ELSE unique_find_status END WHERE slug=?").bind(line.slug)),
       env.DB.prepare("INSERT INTO order_status_history(order_id,status,note,actor_email) VALUES (?,?,?,?)").bind(orderId, "PENDING", "Order placed", email),
       env.DB.prepare("INSERT INTO order_timeline(order_id,event_type,public_title,public_description,actor_email) VALUES (?,?,?,?,?)").bind(orderId, "order", "Order placed", "We received your order and will update you as it moves forward.", email),
       env.DB.prepare("INSERT INTO payments(order_id,provider,amount,status) VALUES (?,?,?,?)").bind(orderId, paymentMethod, total - walletPaise, "pending"),
@@ -112,7 +120,7 @@ export async function POST(request: Request) {
     await env.DB.batch(writes);
     return Response.json({ orderId, paymentMethod, subtotalAmount: subtotal, discountAmount: coupon.amount, shippingAmount: shipping, totalAmount: total, walletAmount: walletPaise, payableAmount: total - walletPaise }, { status: 201 });
   } catch (error) {
-    if (decremented.length) await env.DB.batch(decremented.map((line) => env.DB.prepare("UPDATE product_variants SET stock=stock+? WHERE id=?").bind(line.quantity, line.variantId)));
+    if (decremented.length) await env.DB.batch(decremented.map((line) => env.DB.prepare(line.isUniqueFind ? "UPDATE product_variants SET stock=stock+?,reserved_stock=reserved_stock+? WHERE id=?" : "UPDATE product_variants SET stock=stock+? WHERE id=?").bind(...(line.isUniqueFind ? [line.quantity, line.quantity, line.variantId] : [line.quantity, line.variantId]))));
     if (walletDebit && orderId) await env.DB.prepare("INSERT INTO wallet_ledger(customer_id,order_id,amount,type,status,note,idempotency_key) VALUES (?,?,?,'failed_order_restore','available',?,?) ON CONFLICT(idempotency_key) DO NOTHING")
       .bind(walletDebit.customerId, orderId, walletDebit.amount, `Wallet restored after failed order #${orderId}`, `order:${orderId}:wallet-return`).run();
     if (orderId) await env.DB.prepare("UPDATE orders SET status='failed' WHERE id=?").bind(orderId).run();

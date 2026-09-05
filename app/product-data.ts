@@ -1,11 +1,12 @@
 export type ProductImage = { key: string; label: string; src: string };
 export type ProductCategory = "Men" | "Women";
 export type ProductVariant = { id: number; size: string; stock: number; price?: number | null };
-export type Product = { id: number; slug: string; name: string; price: number; color: string; category: ProductCategory; note: string; gallery: ProductImage[]; variantId?: number; selectedSize?: string; variants?: ProductVariant[] };
+export type Product = { id: number; slug: string; name: string; price: number; color: string; category: ProductCategory; note: string; gallery: ProductImage[]; variantId?: number; selectedSize?: string; variants?: ProductVariant[]; editionNumber?: number | null; isUniqueFind?: boolean; lifetimeProductionCap?: number | null; availableStock?: number; uniqueFindStatus?: string };
 
 export const products: Product[] = [
   {
     "id": 1,
+    "editionNumber": 1,
     "slug": "allergic-to-people-tee",
     "name": "Allergic To People Tee",
     "price": 1499,
@@ -37,6 +38,7 @@ export const products: Product[] = [
   },
   {
     "id": 2,
+    "editionNumber": 2,
     "slug": "apologies-in-cash-tee",
     "name": "Apologies In Cash Tee",
     "price": 1499,
@@ -68,6 +70,7 @@ export const products: Product[] = [
   },
   {
     "id": 3,
+    "editionNumber": 3,
     "slug": "born-to-slay-baby-tee",
     "name": "Born To Slay Baby Tee",
     "price": 1299,
@@ -99,6 +102,7 @@ export const products: Product[] = [
   },
   {
     "id": 4,
+    "editionNumber": 4,
     "slug": "dont-call-me-lucky-tee",
     "name": "Dont Call Me Lucky Tee",
     "price": 1499,
@@ -130,6 +134,7 @@ export const products: Product[] = [
   },
   {
     "id": 5,
+    "editionNumber": 5,
     "slug": "dump-him-crop-tee",
     "name": "Dump Him Crop Tee",
     "price": 1299,
@@ -161,6 +166,7 @@ export const products: Product[] = [
   },
   {
     "id": 6,
+    "editionNumber": 6,
     "slug": "even-at-my-worst-tee",
     "name": "Even At My Worst Tee",
     "price": 1599,
@@ -192,6 +198,7 @@ export const products: Product[] = [
   },
   {
     "id": 7,
+    "editionNumber": 7,
     "slug": "fall-in-love-tee",
     "name": "Fall In Love Tee",
     "price": 1499,
@@ -223,6 +230,7 @@ export const products: Product[] = [
   },
   {
     "id": 8,
+    "editionNumber": 8,
     "slug": "hot-wife-tee",
     "name": "Hot Wife Tee",
     "price": 1499,
@@ -254,6 +262,7 @@ export const products: Product[] = [
   },
   {
     "id": 9,
+    "editionNumber": 9,
     "slug": "i-hate-explaining-tee",
     "name": "I Hate Explaining Tee",
     "price": 1599,
@@ -285,6 +294,7 @@ export const products: Product[] = [
   },
   {
     "id": 10,
+    "editionNumber": 10,
     "slug": "i-told-my-mom-tee",
     "name": "I Told My Mom Tee",
     "price": 1599,
@@ -316,6 +326,7 @@ export const products: Product[] = [
   },
   {
     "id": 11,
+    "editionNumber": 11,
     "slug": "literally-just-a-girl-tee",
     "name": "Literally Just A Girl Tee",
     "price": 1499,
@@ -347,6 +358,7 @@ export const products: Product[] = [
   },
   {
     "id": 12,
+    "editionNumber": 12,
     "slug": "master-of-sarcasm-crop-tee",
     "name": "Master of Sarcasm Crop Tee",
     "price": 1299,
@@ -378,6 +390,7 @@ export const products: Product[] = [
   },
   {
     "id": 13,
+    "editionNumber": 13,
     "slug": "milf-tee",
     "name": "MILF Tee",
     "price": 1599,
@@ -409,6 +422,7 @@ export const products: Product[] = [
   },
   {
     "id": 14,
+    "editionNumber": 14,
     "slug": "music-remembered-tee",
     "name": "Music Remembered Tee",
     "price": 1499,
@@ -440,6 +454,7 @@ export const products: Product[] = [
   },
   {
     "id": 15,
+    "editionNumber": 15,
     "slug": "my-cardio-tee",
     "name": "My Cardio Tee",
     "price": 1599,
@@ -471,6 +486,7 @@ export const products: Product[] = [
   },
   {
     "id": 16,
+    "editionNumber": 16,
     "slug": "my-heart-says-yes-tee",
     "name": "My Heart Says Yes Tee",
     "price": 1599,
@@ -502,6 +518,7 @@ export const products: Product[] = [
   },
   {
     "id": 17,
+    "editionNumber": 17,
     "slug": "need-money-for-porsche-tee",
     "name": "Need Money For Porsche Tee",
     "price": 1499,
@@ -533,6 +550,7 @@ export const products: Product[] = [
   },
   {
     "id": 18,
+    "editionNumber": 18,
     "slug": "nothing-to-wear-tee",
     "name": "Nothing To Wear Tee",
     "price": 1599,
@@ -564,6 +582,7 @@ export const products: Product[] = [
   },
   {
     "id": 19,
+    "editionNumber": 19,
     "slug": "perfect-italian-tee",
     "name": "Perfect Italian Tee",
     "price": 1499,
@@ -595,6 +614,7 @@ export const products: Product[] = [
   },
   {
     "id": 20,
+    "editionNumber": 20,
     "slug": "pre-rich-tee",
     "name": "Pre Rich Tee",
     "price": 1499,
@@ -626,6 +646,7 @@ export const products: Product[] = [
   },
   {
     "id": 21,
+    "editionNumber": 21,
     "slug": "same-shit-different-day",
     "name": "Same Shit Different Day Tee",
     "price": 1499,

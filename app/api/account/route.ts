@@ -1,8 +1,14 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { addresses, customers, orderItems, orders, walletLedger, wishlists } from "../../../db/schema";
+import { addresses, customers, orders, walletLedger, wishlists } from "../../../db/schema";
 import { products } from "../../product-data";
 import { attachReferral, requireApiCustomer } from "../_lib/account";
+import { env } from "../../../db/runtime";
+
+type AccountOrderItem = {
+  id: number; orderId: number; productSlug: string; productName: string;
+  unitPrice: number; quantity: number; size: string; color: string; variantId: number | null;
+};
 
 export async function GET(request: Request) {
   try {
@@ -15,12 +21,19 @@ export async function GET(request: Request) {
       db.select().from(walletLedger).where(eq(walletLedger.customerId, customer.id)).orderBy(desc(walletLedger.createdAt)),
       db.select().from(wishlists).where(eq(wishlists.customerId, customer.id)).orderBy(desc(wishlists.createdAt)),
     ]);
-    const items = customerOrders.length
-      ? await db.select().from(orderItems).where(
-          // D1 accepts this compact IN predicate through Drizzle's SQL builder.
-          (await import("drizzle-orm")).inArray(orderItems.orderId, customerOrders.map((order) => order.id)),
-        )
-      : [];
+    // Keep this backward-compatible with stores that have not yet applied the
+    // optional Unique Finds migration (which adds edition columns to order_items).
+    // PostgreSQL also cannot expand a D1-style array bind in `IN (?)`.
+    const itemGroups = await Promise.all(customerOrders.map(async (order) => {
+      const result = await env.DB.prepare("SELECT id,order_id,product_slug,product_name,unit_price,quantity,size,color,variant_id FROM order_items WHERE order_id=? ORDER BY id")
+        .bind(order.id).all<Record<string, unknown>>();
+      return result.results.map((item): AccountOrderItem => ({
+        id: Number(item.id), orderId: Number(item.order_id), productSlug: String(item.product_slug), productName: String(item.product_name),
+        unitPrice: Number(item.unit_price), quantity: Number(item.quantity), size: String(item.size), color: String(item.color || ""),
+        variantId: item.variant_id == null ? null : Number(item.variant_id),
+      }));
+    }));
+    const items = itemGroups.flat();
     const pending = ledger.filter((entry) => entry.status === "pending").reduce((sum, entry) => sum + Math.max(0, entry.amount), 0);
     const approved = ledger.filter((entry) => entry.status === "available" || entry.status === "used").reduce((sum, entry) => sum + entry.amount, 0);
     const used = Math.abs(ledger.filter((entry) => entry.type === "debit" && entry.status === "used").reduce((sum, entry) => sum + entry.amount, 0));

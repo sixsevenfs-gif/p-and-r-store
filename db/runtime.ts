@@ -45,7 +45,7 @@ const identityTables = new Set([
   "categories", "collections", "returns", "discounts", "payouts", "content_sections", "order_notes",
   "audit_logs", "media_assets", "customer_notes", "carts", "cart_items", "payments", "reviews",
   "review_images", "shipping_rules", "coupons", "coupon_usages", "admin_roles", "order_status_history",
-  "order_timeline",
+  "order_timeline", "unique_find_reservations",
 ]);
 
 function translate(input: string) {

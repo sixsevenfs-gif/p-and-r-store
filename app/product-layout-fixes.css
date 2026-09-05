@@ -1,0 +1,8 @@
+/* Keep the product information panel in normal document flow when it becomes
+   taller than the viewport, especially on portrait tablets. */
+.product-page{align-items:start;background:#fff;z-index:2}
+.product-info{height:auto;min-height:100vh;padding-bottom:140px;background:#fff;isolation:isolate}
+.site-footer{z-index:1}
+.edition-label{font-size:9px;line-height:1.2;letter-spacing:.18em;color:#6b6b67}
+@media(max-width:1000px){.product-page{grid-template-columns:1fr}.product-info{position:static;min-height:0;padding:52px 7vw 130px}.product-gallery-shell{padding-bottom:24px}.back{color:#111}}
+@media(max-width:760px){.product-info{padding:48px 20px 120px}.product-info .accordions{padding-bottom:18px}.edition-label{margin-bottom:6px}}

@@ -14,9 +14,16 @@ function cleanProduct(raw: ProductInput) {
   const status = text(raw.status || "draft", 20), audience = text(raw.audience || "unisex", 20), productType = text(raw.productType || "apparel", 80), taxStatus = text(raw.taxStatus || "taxable", 20);
   const variants = Array.isArray(raw.variants) ? raw.variants as VariantInput[] : [];
   const images = Array.isArray(raw.images) ? raw.images as ImageInput[] : [];
+  const editionNumber = Math.floor(Number(raw.editionNumber));
+  const isUniqueFind = raw.isUniqueFind === true;
+  const lifetimeProductionCap = raw.lifetimeProductionCap === "" || raw.lifetimeProductionCap == null ? null : Math.floor(Number(raw.lifetimeProductionCap));
+  const uniqueFindStatus = text(raw.uniqueFindStatus || "available", 20);
+  const archiveNote = text(raw.archiveNote, 400);
+  const uniqueReleaseAt = raw.uniqueReleaseAt ? Math.floor(new Date(String(raw.uniqueReleaseAt)).getTime() / 1000) : null;
   if (!name || !slugPattern.test(slug) || !category || !sku || !Number.isFinite(price) || !["draft", "published", "archived"].includes(status) || !["men", "women", "unisex"].includes(audience)) throw new Error("Enter a title, valid slug, category, SKU, price, audience and status.");
   if (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < Number(price))) throw new Error("Compare-at price must be greater than or equal to the selling price.");
   if (costPrice !== null && !Number.isFinite(costPrice)) throw new Error("Cost price is invalid.");
+  if (!Number.isInteger(editionNumber) || editionNumber < 1) throw new Error("Every product needs a unique edition number.");
   if (!variants.length || variants.length > 100) throw new Error("Add between 1 and 100 variants.");
   const variantKeys = new Set<string>();
   const variantSkus = new Set<string>();
@@ -29,8 +36,13 @@ function cleanProduct(raw: ProductInput) {
     if (variantSkus.has(variantSku.toLowerCase())) throw new Error("Variant SKUs must be unique.");
     variantKeys.add(key); variantSkus.add(variantSku.toLowerCase()); return { id: Number(variant.id) || null, size, color: variantColor, sku: variantSku, stock, threshold, price: variantPrice, active: variant.active !== false };
   });
+  const totalStock = cleanVariants.filter((variant) => variant.active).reduce((sum, variant) => sum + variant.stock, 0);
+  if (isUniqueFind && (!Number.isInteger(lifetimeProductionCap) || Number(lifetimeProductionCap) < 1 || Number(lifetimeProductionCap) > 5)) throw new Error("Unique Finds need a lifetime production cap from 1 to 5.");
+  if (isUniqueFind && totalStock > Number(lifetimeProductionCap ?? 0)) throw new Error(`Variant stock (${totalStock}) cannot exceed the lifetime cap of ${lifetimeProductionCap}.`);
+  if (!isUniqueFind && lifetimeProductionCap !== null) throw new Error("Lifetime production cap is only available for Unique Finds.");
+  if (!['available', 'closed', 'scheduled'].includes(uniqueFindStatus)) throw new Error("Invalid Unique Find release status.");
   const cleanImages = images.map((image, index) => ({ url: text(image.url, 500), altText: text(image.altText, 180), sortOrder: Number.isInteger(Number(image.sortOrder)) ? Number(image.sortOrder) : index })).filter((image) => image.url.startsWith("/api/media/"));
-  return { name, slug, category, color, sku, price, compareAtPrice, costPrice, status, audience, productType, taxStatus, description: text(raw.description, 7000), shortDescription: text(raw.shortDescription, 300), tags: Array.isArray(raw.tags) ? JSON.stringify(raw.tags.map((tag) => text(tag, 40)).filter(Boolean).slice(0, 30)) : "[]", seoTitle: text(raw.seoTitle, 160), seoDescription: text(raw.seoDescription, 320), featured: raw.featured === true, newArrival: raw.newArrival === true, variants: cleanVariants, images: cleanImages };
+  return { name, slug, category, color, sku, price, compareAtPrice, costPrice, status, audience, productType, taxStatus, editionNumber, isUniqueFind, lifetimeProductionCap, uniqueFindStatus: isUniqueFind ? uniqueFindStatus : "available", archiveNote, keepVisibleAfterSellout: raw.keepVisibleAfterSellout !== false, uniqueReleaseAt: Number.isFinite(uniqueReleaseAt) ? uniqueReleaseAt : null, totalStock, description: text(raw.description, 7000), shortDescription: text(raw.shortDescription, 300), tags: Array.isArray(raw.tags) ? JSON.stringify(raw.tags.map((tag) => text(tag, 40)).filter(Boolean).slice(0, 30)) : "[]", seoTitle: text(raw.seoTitle, 160), seoDescription: text(raw.seoDescription, 320), featured: raw.featured === true, newArrival: raw.newArrival === true, variants: cleanVariants, images: cleanImages };
 }
 async function audit(email: string, action: string, id: number, detail: unknown) { await env.DB.prepare("INSERT INTO audit_logs(admin_email,action,resource,resource_id,detail) VALUES(?,?,?,?,?)").bind(email, action, "products", String(id), JSON.stringify(detail)).run(); }
 
@@ -45,9 +57,9 @@ export async function POST(request: Request) {
   const admin = await requireAdmin(request); if (!admin) return Response.json({ error: "Admin access required." }, { status: 403 });
   try {
     const product = cleanProduct(await request.json() as ProductInput);
-    const duplicate = await env.DB.prepare("SELECT id FROM products WHERE slug=? OR sku=?").bind(product.slug, product.sku).first();
-    if (duplicate) return Response.json({ error: "Product slug or product SKU already exists." }, { status: 409 });
-    const result = await env.DB.prepare(`INSERT INTO products(slug,name,description,short_description,price,compare_at_price,cost_price,category,color,status,sku,featured,new_arrival,audience,product_type,tags,seo_title,seo_description,tax_status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(product.slug, product.name, product.description, product.shortDescription, product.price, product.compareAtPrice, product.costPrice, product.category, product.color, product.status, product.sku, Number(product.featured), Number(product.newArrival), product.audience, product.productType, product.tags, product.seoTitle, product.seoDescription, product.taxStatus).run();
+    const duplicate = await env.DB.prepare("SELECT id FROM products WHERE slug=? OR sku=? OR edition_number=?").bind(product.slug, product.sku, product.editionNumber).first();
+    if (duplicate) return Response.json({ error: "Product slug, SKU or edition number already exists." }, { status: 409 });
+    const result = await env.DB.prepare(`INSERT INTO products(slug,name,description,short_description,price,compare_at_price,cost_price,category,color,status,sku,featured,new_arrival,audience,product_type,tags,seo_title,seo_description,tax_status,edition_number,is_unique_find,lifetime_production_cap,total_units_created,unique_find_status,archive_note,keep_visible_after_sellout,unique_release_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(product.slug, product.name, product.description, product.shortDescription, product.price, product.compareAtPrice, product.costPrice, product.category, product.color, product.status, product.sku, Number(product.featured), Number(product.newArrival), product.audience, product.productType, product.tags, product.seoTitle, product.seoDescription, product.taxStatus, product.editionNumber, Number(product.isUniqueFind), product.lifetimeProductionCap, product.isUniqueFind ? product.totalStock : 0, product.uniqueFindStatus, product.archiveNote, Number(product.keepVisibleAfterSellout), product.uniqueReleaseAt).run();
     const id = Number(result.meta.last_row_id); if (!id) throw new Error("Product could not be saved.");
     await env.DB.batch([...product.variants.map((variant) => env.DB.prepare("INSERT INTO product_variants(product_id,size,color,sku,stock,low_stock_threshold,price,active) VALUES(?,?,?,?,?,?,?,?)").bind(id, variant.size, variant.color, variant.sku, variant.stock, variant.threshold, variant.price, Number(variant.active))), ...product.images.map((image) => env.DB.prepare("INSERT INTO product_images(product_id,url,alt_text,sort_order) VALUES(?,?,?,?)").bind(id, image.url, image.altText, image.sortOrder))]);
     await audit(admin.email, "create", id, { slug: product.slug, variants: product.variants.length, images: product.images.length });
@@ -61,11 +73,13 @@ export async function PUT(request: Request) {
     const body = await request.json() as ProductInput & { id?: unknown };
     const id = Number(body.id);
     if (!Number.isInteger(id) || id < 1) throw new Error("A valid product is required.");
-    const existingProduct = await env.DB.prepare("SELECT id,name FROM products WHERE id=?").bind(id).first<{ id: number; name: string }>();
+    const existingProduct = await env.DB.prepare("SELECT id,name,lifetime_production_cap,is_unique_find,total_units_created FROM products WHERE id=?").bind(id).first<{ id: number; name: string; lifetime_production_cap: number | null; is_unique_find: number; total_units_created: number }>();
     if (!existingProduct) return Response.json({ error: "Product not found." }, { status: 404 });
     const product = cleanProduct(body);
-    const duplicateProduct = await env.DB.prepare("SELECT id FROM products WHERE (slug=? OR sku=?) AND id<>?").bind(product.slug, product.sku, id).first();
-    if (duplicateProduct) return Response.json({ error: "Product slug or product SKU already exists." }, { status: 409 });
+    const duplicateProduct = await env.DB.prepare("SELECT id FROM products WHERE (slug=? OR sku=? OR edition_number=?) AND id<>?").bind(product.slug, product.sku, product.editionNumber, id).first();
+    if (duplicateProduct) return Response.json({ error: "Product slug, SKU or edition number already exists." }, { status: 409 });
+    const sold = await env.DB.prepare("SELECT coalesce(sum(i.quantity),0) AS count FROM order_items i JOIN orders o ON o.id=i.order_id WHERE i.product_slug=(SELECT slug FROM products WHERE id=?) AND o.status NOT IN ('cancelled','failed')").bind(id).first<{ count: number }>();
+    if (Number(existingProduct.is_unique_find) && Number(sold?.count ?? 0) > 0 && product.lifetimeProductionCap !== existingProduct.lifetime_production_cap) throw new Error("The lifetime cap is permanent after the first valid sale.");
     const skuList = product.variants.map((variant) => variant.sku);
     if (skuList.length) {
       const placeholders = skuList.map(() => "?").join(",");
@@ -77,7 +91,7 @@ export async function PUT(request: Request) {
     const currentStock = new Map(currentVariants.results.map((variant) => [Number(variant.id), Number(variant.stock)]));
     const keptVariantIds = product.variants.map((variant) => variant.id).filter((variantId): variantId is number => Boolean(variantId && currentIds.has(variantId)));
     const statements: D1PreparedStatement[] = [
-      env.DB.prepare(`UPDATE products SET slug=?,name=?,description=?,short_description=?,price=?,compare_at_price=?,cost_price=?,category=?,color=?,status=?,sku=?,featured=?,new_arrival=?,audience=?,product_type=?,tags=?,seo_title=?,seo_description=?,tax_status=?,updated_at=unixepoch() WHERE id=?`).bind(product.slug, product.name, product.description, product.shortDescription, product.price, product.compareAtPrice, product.costPrice, product.category, product.color, product.status, product.sku, Number(product.featured), Number(product.newArrival), product.audience, product.productType, product.tags, product.seoTitle, product.seoDescription, product.taxStatus, id),
+      env.DB.prepare(`UPDATE products SET slug=?,name=?,description=?,short_description=?,price=?,compare_at_price=?,cost_price=?,category=?,color=?,status=?,sku=?,featured=?,new_arrival=?,audience=?,product_type=?,tags=?,seo_title=?,seo_description=?,tax_status=?,edition_number=?,is_unique_find=?,lifetime_production_cap=?,total_units_created=greatest(total_units_created,?),unique_find_status=?,archive_note=?,keep_visible_after_sellout=?,unique_release_at=?,updated_at=unixepoch() WHERE id=?`).bind(product.slug, product.name, product.description, product.shortDescription, product.price, product.compareAtPrice, product.costPrice, product.category, product.color, product.status, product.sku, Number(product.featured), Number(product.newArrival), product.audience, product.productType, product.tags, product.seoTitle, product.seoDescription, product.taxStatus, product.editionNumber, Number(product.isUniqueFind), product.lifetimeProductionCap, product.isUniqueFind ? product.totalStock : 0, product.uniqueFindStatus, product.archiveNote, Number(product.keepVisibleAfterSellout), product.uniqueReleaseAt, id),
       env.DB.prepare("DELETE FROM product_images WHERE product_id=?").bind(id),
       ...product.images.map((image) => env.DB.prepare("INSERT INTO product_images(product_id,url,alt_text,sort_order) VALUES(?,?,?,?)").bind(id, image.url, image.altText, image.sortOrder)),
     ];
@@ -103,6 +117,10 @@ export async function PUT(request: Request) {
 
 export async function GET(request: Request) {
   if (!(await requireAdmin(request))) return Response.json({ error: "Admin access required." }, { status: 403 });
+  if (new URL(request.url).searchParams.get("nextEdition") === "1") {
+    const row = await env.DB.prepare("SELECT coalesce(max(edition_number),0)+1 AS edition_number FROM products").first<{ edition_number: number }>();
+    return Response.json({ editionNumber: Number(row?.edition_number ?? 1) });
+  }
   const id = Number(new URL(request.url).searchParams.get("id")); if (!Number.isInteger(id) || id < 1) return Response.json({ error: "A product ID is required." }, { status: 400 });
   const product = await env.DB.prepare("SELECT * FROM products WHERE id=?").bind(id).first<Record<string, unknown>>();
   if (!product) return Response.json({ error: "Product not found." }, { status: 404 });

@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   }
   const result = await listCatalog({
     query: url.searchParams.get("q"), category: url.searchParams.get("category"), color: url.searchParams.get("color"),
-    size: url.searchParams.get("size"), available: url.searchParams.get("available") === "true", sort: url.searchParams.get("sort"),
+    size: url.searchParams.get("size"), available: url.searchParams.get("available") === "true", sort: url.searchParams.get("sort"), uniqueFinds: url.searchParams.get("uniqueFinds") === "true",
     limit: Number(url.searchParams.get("limit") ?? 24), offset: Number(url.searchParams.get("offset") ?? 0),
   });
   return Response.json(result, { headers: { "cache-control": "public, max-age=30" } });

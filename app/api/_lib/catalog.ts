@@ -7,6 +7,7 @@ export type CatalogFilters = {
   color?: string | null;
   size?: string | null;
   available?: boolean;
+  uniqueFinds?: boolean;
   sort?: string | null;
   limit?: number;
   offset?: number;
@@ -20,11 +21,11 @@ export async function ensureCatalog() {
 
   for (const product of seedProducts) {
     await env.DB.prepare(`INSERT OR IGNORE INTO products
-      (slug,name,description,short_description,price,category,color,status,sku,featured,new_arrival)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+      (slug,name,description,short_description,price,category,color,status,sku,featured,new_arrival,edition_number)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
       .bind(product.slug, product.name, product.note, product.note.slice(0, 180), product.price * 100,
         product.category, product.color, "published", `PR-${String(product.id).padStart(4, "0")}`,
-        product.id <= 5 ? 1 : 0, product.id <= 5 ? 1 : 0).run();
+        product.id <= 5 ? 1 : 0, product.id <= 5 ? 1 : 0, product.id).run();
     const stored = await env.DB.prepare("SELECT id FROM products WHERE slug=?").bind(product.slug).first<{ id: number }>();
     if (!stored) continue;
     await env.DB.batch([
@@ -55,6 +56,7 @@ export async function listCatalog(filters: CatalogFilters = {}) {
     args.push(filters.size.slice(0, 16));
   }
   if (filters.available) where.push("EXISTS (SELECT 1 FROM product_variants va WHERE va.product_id=p.id AND va.active=1 AND va.stock-va.reserved_stock > 0)");
+  if (filters.uniqueFinds) where.push("p.is_unique_find=1");
 
   const orderBy: Record<string, string> = {
     "price-asc": "coalesce(min(v.price),p.price) ASC, p.id DESC",
@@ -65,7 +67,8 @@ export async function listCatalog(filters: CatalogFilters = {}) {
   const limit = Math.min(48, Math.max(1, Number(filters.limit ?? 24)));
   const offset = Math.max(0, Number(filters.offset ?? 0));
   const sql = `SELECT p.id,p.slug,p.name,p.description,p.short_description,p.price,p.compare_at_price,p.category,p.color,
-      p.featured,p.new_arrival,p.created_at,coalesce(sum(case when v.active=1 then v.stock-v.reserved_stock else 0 end),0) AS available_stock,
+      p.featured,p.new_arrival,p.created_at,p.edition_number,p.is_unique_find,p.lifetime_production_cap,p.total_units_created,p.unique_find_status,p.archive_note,p.keep_visible_after_sellout,p.unique_release_at,
+      coalesce(sum(case when v.active=1 then v.stock-v.reserved_stock else 0 end),0) AS available_stock,
       (SELECT url FROM product_images WHERE product_id=p.id ORDER BY sort_order,id LIMIT 1) AS image_url,
       (SELECT id FROM product_variants WHERE product_id=p.id AND active=1 AND size='M' ORDER BY id LIMIT 1) AS default_variant_id
     FROM products p LEFT JOIN product_variants v ON v.product_id=p.id

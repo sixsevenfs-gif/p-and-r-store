@@ -13,7 +13,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     FROM orders WHERE id=? AND customer_id=?`).bind(id, customer.id).first<Row>();
   if (!order) return Response.json({ error: "Order not found." }, { status: 404 });
   const [items, timeline] = await Promise.all([
-    env.DB.prepare(`SELECT i.product_slug,i.product_name,i.unit_price,i.quantity,i.size,i.color,i.variant_id,
+    env.DB.prepare(`SELECT i.product_slug,i.product_name,i.unit_price,i.quantity,i.size,i.color,i.variant_id,i.edition_number,i.is_unique_find,
       (SELECT url FROM product_images pi JOIN products p ON p.id=pi.product_id WHERE p.slug=i.product_slug ORDER BY pi.sort_order,pi.id LIMIT 1) image_url
       FROM order_items i WHERE i.order_id=? ORDER BY i.id`).bind(id).all<Row>(),
     env.DB.prepare("SELECT id,event_type,public_title,public_description,created_at FROM order_timeline WHERE order_id=? ORDER BY created_at,id").bind(id).all<Row>(),
@@ -47,5 +47,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
     env.DB.prepare("INSERT INTO order_timeline(order_id,event_type,public_title,public_description,actor_email) VALUES (?,?,?,?,?)").bind(id, "cancellation", "Order cancelled", reason, actor),
     env.DB.prepare("INSERT INTO audit_logs(admin_email,action,resource,resource_id,detail) VALUES (?,?,?,?,?)").bind(`customer:${actor}`, "customer_order_cancellation", "orders", String(id), JSON.stringify({ reason })),
   ]);
+  await env.DB.prepare(`UPDATE products SET unique_find_status='available' WHERE is_unique_find=1 AND id IN (
+    SELECT v.product_id FROM product_variants v JOIN order_items i ON i.variant_id=v.id WHERE i.order_id=? AND i.is_unique_find=1
+  ) AND EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id=products.id AND v.active=1 AND v.stock-v.reserved_stock>0)`).bind(id).run();
   return Response.json({ cancelled: true });
 }

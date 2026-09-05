@@ -8,7 +8,7 @@ const money = (value: unknown) => `INR ${(Number(value || 0) / 100).toFixed(2)}`
 export async function orderDocument(orderId: number, kind: DocumentKind, includeInternal = false) {
   const order = await env.DB.prepare(`SELECT o.*,c.first_name,c.last_name,c.email,c.phone FROM orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=?`).bind(orderId).first<Row>();
   if (!order) return null;
-  const items = await env.DB.prepare("SELECT product_name,size,color,quantity,unit_price FROM order_items WHERE order_id=? ORDER BY id").bind(orderId).all<Row>();
+  const items = await env.DB.prepare("SELECT product_name,size,color,quantity,unit_price,edition_number,is_unique_find FROM order_items WHERE order_id=? ORDER BY id").bind(orderId).all<Row>();
   let address: Record<string, unknown> = {};
   try { address = JSON.parse(String(order.shipping_address || "{}")); } catch { /* preserve malformed legacy snapshots without exposing parser errors */ }
   const name = `${order.first_name || ""} ${order.last_name || ""}`.trim();
@@ -20,7 +20,7 @@ export async function orderDocument(orderId: number, kind: DocumentKind, include
   ];
   if (kind !== "shipping-label") {
     lines.push("", "ITEMS");
-    for (const item of items.results) lines.push(`${item.quantity} x ${item.product_name} | ${item.size}${item.color ? ` / ${item.color}` : ""} | ${money(item.unit_price)}`);
+    for (const item of items.results) lines.push(`${item.quantity} x ${item.product_name}${item.is_unique_find ? " | LIMITED · NEVER RESTOCKED" : item.edition_number ? ` | EDITION ${String(item.edition_number).padStart(3, "0")}` : ""} | ${item.size}${item.color ? ` / ${item.color}` : ""} | ${money(item.unit_price)}`);
     lines.push("", `Subtotal: ${money(order.subtotal_amount)}`, `Discount: ${money(order.discount_amount)}`, `Shipping: ${money(order.shipping_amount)}`, `Total: ${money(order.total_amount)}`, `Payment: ${order.payment_method} / ${order.payment_status}`);
   }
   if (kind === "summary") lines.push(`Fulfilment: ${order.status}`, `Courier: ${order.courier || "Not assigned"}`, `AWB: ${order.tracking_id || "Not assigned"}`, `Refund: ${order.refund_status || "none"}`);

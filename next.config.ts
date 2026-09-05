@@ -13,9 +13,6 @@ const nextConfig: NextConfig = {
       ? [{ protocol: "https", hostname: new URL(supabaseUrl).hostname, pathname: "/storage/v1/object/public/**" }]
       : [],
   },
-  turbopack: {
-    root: process.cwd(),
-  },
 };
 
 export default nextConfig;

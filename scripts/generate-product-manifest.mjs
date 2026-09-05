@@ -78,6 +78,7 @@ const products = directories.map((slug, index) => {
 
   return {
     id: metadata.id ?? index + 1,
+    editionNumber: metadata.editionNumber ?? metadata.id ?? index + 1,
     slug,
     name: metadata.name ?? titleFromSlug(slug),
     price: metadata.price ?? 1499,
@@ -95,6 +96,7 @@ const products = directories.map((slug, index) => {
 const fallbackProducts = [
   {
     id: 1,
+    editionNumber: 1,
     slug: "heavyweight-tee-01",
     name: "Heavyweight Tee 01",
     price: 1499,
@@ -111,7 +113,7 @@ const fallbackProducts = [
 const source = `export type ProductImage = { key: string; label: string; src: string };
 export type ProductCategory = "Men" | "Women";
 export type ProductVariant = { id: number; size: string; stock: number; price?: number | null };
-export type Product = { id: number; slug: string; name: string; price: number; color: string; category: ProductCategory; note: string; gallery: ProductImage[]; variantId?: number; selectedSize?: string; variants?: ProductVariant[] };
+export type Product = { id: number; slug: string; name: string; price: number; color: string; category: ProductCategory; note: string; gallery: ProductImage[]; variantId?: number; selectedSize?: string; variants?: ProductVariant[]; editionNumber?: number | null; isUniqueFind?: boolean; lifetimeProductionCap?: number | null; availableStock?: number; uniqueFindStatus?: string };
 
 export const products: Product[] = ${JSON.stringify(products.length ? products : fallbackProducts, null, 2)};
 `;
