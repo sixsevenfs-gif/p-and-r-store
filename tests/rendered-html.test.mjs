@@ -65,3 +65,29 @@ test("keeps wallet checkout bounded and idempotent", async () => {
   assert.match(orders, /walletAmount \* 100/);
   assert.match(migration, /orders_checkout_key_unique/);
 });
+
+test("preserves product images and stores restorable revisions", async () => {
+  const [editor, productsApi, migration] = await Promise.all([
+    read("../app/admin/product-editor.tsx"),
+    read("../app/api/admin/products/route.ts"),
+    read("../supabase/migrations/0006_product_revisions.sql"),
+  ]);
+  assert.match(editor, /Restore previous/);
+  assert.match(editor, /Product saved successfully/);
+  assert.match(productsApi, /INSERT INTO product_revisions/);
+  assert.match(productsApi, /revision.*latest/);
+  assert.match(productsApi, /value\.startsWith\("\/products\/"\)/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS product_revisions/);
+});
+
+test("credits completed return refunds to the P&R wallet once", async () => {
+  const [ordersAdmin, orderManager] = await Promise.all([
+    read("../app/api/admin/orders/route.ts"),
+    read("../app/admin/order-manager.tsx"),
+  ]);
+  assert.match(ordersAdmin, /'return_refund','available'/);
+  assert.match(ordersAdmin, /return-refund:\$\{orderId\}/);
+  assert.match(ordersAdmin, /ON CONFLICT\(idempotency_key\) DO NOTHING/);
+  assert.match(ordersAdmin, /Refund added to P&R Wallet/);
+  assert.match(orderManager, /P&R Wallet/);
+});

@@ -98,6 +98,15 @@ export async function PATCH(request: Request) {
     if (next === "cancelled") { updates.push("cancelled_at=unixepoch()", "cancellation_reason=?"); values.push(reason); }
     if (next === "refunded") updates.push("refunded_at=unixepoch()", "refund_status='refunded'", "payment_status='refunded'");
     writes.push(env.DB.prepare(`UPDATE orders SET ${updates.join(",")} WHERE id=?`).bind(...values, orderId));
+    if (next === "refunded") {
+      const refundAmount = Math.max(0, Number(order.total_amount || 0));
+      if (!refundAmount) return Response.json({ error: "This order has no refundable amount." }, { status: 409 });
+      writes.push(env.DB.prepare(`INSERT INTO wallet_ledger(customer_id,order_id,amount,type,status,note,idempotency_key)
+        VALUES(?,?,?,'return_refund','available',?,?) ON CONFLICT(idempotency_key) DO NOTHING`)
+        .bind(order.customer_id, orderId, refundAmount, `Return refund for order #${orderId}`, `return-refund:${orderId}`));
+      appendEvent("refund", "Refund added to P&R Wallet", `₹${(refundAmount / 100).toFixed(2)} is available in your P&R Wallet for a future purchase.`, note);
+      writes.push(env.DB.prepare("UPDATE payments SET status='refunded',updated_at=unixepoch() WHERE order_id=? AND status NOT IN ('failed','refunded')").bind(orderId));
+    }
     writes.push(env.DB.prepare("INSERT INTO order_status_history(order_id,status,note,actor_email) VALUES (?,?,?,?)").bind(orderId, next.toUpperCase(), reason || note || "Updated by admin", admin.email));
     appendEvent("fulfillment", fulfillmentLabels[next] || next, customerMessage || (next === "shipped" && trackingId ? `Tracking number: ${trackingId}` : ""), reason || note);
     if (next === "cancelled" && !order.inventory_restored_at) {

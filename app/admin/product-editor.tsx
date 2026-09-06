@@ -2,12 +2,40 @@
 
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import { LoaderCircle, Plus, Trash2, Upload } from "lucide-react";
+import {
+  Check,
+  LoaderCircle,
+  Plus,
+  RotateCcw,
+  Trash2,
+  Upload,
+} from "lucide-react";
 
-type Variant = { id?: number; size: string; color: string; sku: string; price: string; stock: string; lowStockThreshold: string; active: boolean };
-type ProductPayload = Record<string, unknown> & { variants?: Record<string, unknown>[]; images?: Record<string, unknown>[] };
-const blankVariant = (index: number): Variant => ({ size: index === 0 ? "M" : "", color: "Black", sku: "", price: "", stock: "0", lowStockThreshold: "5", active: true });
-const rupeeInput = (value: unknown) => value == null || value === "" ? "" : String(Number(value) / 100);
+type Variant = {
+  id?: number;
+  size: string;
+  color: string;
+  sku: string;
+  price: string;
+  stock: string;
+  lowStockThreshold: string;
+  active: boolean;
+};
+type ProductPayload = Record<string, unknown> & {
+  variants?: Record<string, unknown>[];
+  images?: Record<string, unknown>[];
+};
+const blankVariant = (index: number): Variant => ({
+  size: index === 0 ? "M" : "",
+  color: "Black",
+  sku: "",
+  price: "",
+  stock: "0",
+  lowStockThreshold: "5",
+  active: true,
+});
+const rupeeInput = (value: unknown) =>
+  value == null || value === "" ? "" : String(Number(value) / 100);
 const text = (value: unknown) => String(value ?? "");
 const parseTags = (value: unknown) => {
   try {
@@ -19,46 +47,770 @@ const parseTags = (value: unknown) => {
 };
 
 export default function ProductEditor({ productId }: { productId?: number }) {
-  const [form, setForm] = useState({ name: "", slug: "", shortDescription: "", description: "", category: "", audience: "unisex", productType: "t-shirt", color: "Black", sku: "", price: "", compareAtPrice: "", costPrice: "", status: "draft", featured: false, newArrival: false, seoTitle: "", seoDescription: "", tags: "", editionNumber: "", isUniqueFind: false, lifetimeProductionCap: "", uniqueFindStatus: "available", archiveNote: "", keepVisibleAfterSellout: true, uniqueReleaseAt: "" });
-  const [variants, setVariants] = useState<Variant[]>([blankVariant(0)]), [images, setImages] = useState<{ url: string; altText: string; sortOrder?: number }[]>([]), [busy, setBusy] = useState(false), [message, setMessage] = useState("");
-  const set = (key: keyof typeof form, value: string | boolean) => setForm((previous) => ({ ...previous, [key]: value }));
+  const [form, setForm] = useState({
+    name: "",
+    slug: "",
+    shortDescription: "",
+    description: "",
+    category: "",
+    audience: "unisex",
+    productType: "t-shirt",
+    color: "Black",
+    sku: "",
+    price: "",
+    compareAtPrice: "",
+    costPrice: "",
+    status: "draft",
+    featured: false,
+    newArrival: false,
+    seoTitle: "",
+    seoDescription: "",
+    tags: "",
+    editionNumber: "",
+    isUniqueFind: false,
+    lifetimeProductionCap: "",
+    uniqueFindStatus: "available",
+    archiveNote: "",
+    keepVisibleAfterSellout: true,
+    uniqueReleaseAt: "",
+  });
+  const [variants, setVariants] = useState<Variant[]>([blankVariant(0)]),
+    [images, setImages] = useState<
+      { url: string; altText: string; sortOrder?: number }[]
+    >([]);
+  const [loading, setLoading] = useState(Boolean(productId)),
+    [saving, setSaving] = useState(false),
+    [uploading, setUploading] = useState(false),
+    [message, setMessage] = useState(""),
+    [saved, setSaved] = useState(false);
+  const busy = loading || saving || uploading;
+  const set = (key: keyof typeof form, value: string | boolean) =>
+    setForm((previous) => ({ ...previous, [key]: value }));
   useEffect(() => {
-    if (!productId) { void fetch("/api/admin/products?nextEdition=1", { cache: "no-store" }).then((response) => response.ok ? response.json() as Promise<{ editionNumber?: number }> : null).then((body) => body?.editionNumber && set("editionNumber", String(body.editionNumber))).catch(() => {}); return; }
+    if (!productId) {
+      void fetch("/api/admin/products?nextEdition=1", { cache: "no-store" })
+        .then((response) =>
+          response.ok
+            ? (response.json() as Promise<{ editionNumber?: number }>)
+            : null,
+        )
+        .then(
+          (body) =>
+            body?.editionNumber &&
+            set("editionNumber", String(body.editionNumber)),
+        )
+        .catch(() => {});
+      return;
+    }
     let cancelled = false;
     const load = async () => {
-      setBusy(true); setMessage("");
-      const response = await fetch(`/api/admin/products?id=${productId}`, { cache: "no-store" });
-      const body = await response.json() as { product?: ProductPayload; error?: string };
-      if (!response.ok || !body.product) throw new Error(body.error || "Unable to load product.");
+      setLoading(true);
+      setMessage("");
+      const response = await fetch(`/api/admin/products?id=${productId}`, {
+        cache: "no-store",
+      });
+      const body = (await response.json()) as {
+        product?: ProductPayload;
+        error?: string;
+      };
+      if (!response.ok || !body.product)
+        throw new Error(body.error || "Unable to load product.");
       if (cancelled) return;
       const product = body.product;
       setForm({
-        name: text(product.name), slug: text(product.slug), shortDescription: text(product.short_description), description: text(product.description),
-        category: text(product.category), audience: text(product.audience || "unisex"), productType: text(product.product_type || "t-shirt"), color: text(product.color || "Black"),
-        sku: text(product.sku), price: rupeeInput(product.price), compareAtPrice: rupeeInput(product.compare_at_price), costPrice: rupeeInput(product.cost_price),
-        status: text(product.status || "draft"), featured: Boolean(product.featured), newArrival: Boolean(product.new_arrival), seoTitle: text(product.seo_title), seoDescription: text(product.seo_description),
-        tags: parseTags(product.tags), editionNumber: text(product.edition_number), isUniqueFind: Boolean(product.is_unique_find), lifetimeProductionCap: text(product.lifetime_production_cap), uniqueFindStatus: text(product.unique_find_status || "available"), archiveNote: text(product.archive_note), keepVisibleAfterSellout: product.keep_visible_after_sellout !== 0 && product.keep_visible_after_sellout !== false, uniqueReleaseAt: product.unique_release_at ? new Date(Number(product.unique_release_at) * 1000).toISOString().slice(0, 16) : "",
+        name: text(product.name),
+        slug: text(product.slug),
+        shortDescription: text(product.short_description),
+        description: text(product.description),
+        category: text(product.category),
+        audience: text(product.audience || "unisex"),
+        productType: text(product.product_type || "t-shirt"),
+        color: text(product.color || "Black"),
+        sku: text(product.sku),
+        price: rupeeInput(product.price),
+        compareAtPrice: rupeeInput(product.compare_at_price),
+        costPrice: rupeeInput(product.cost_price),
+        status: text(product.status || "draft"),
+        featured: Boolean(product.featured),
+        newArrival: Boolean(product.new_arrival),
+        seoTitle: text(product.seo_title),
+        seoDescription: text(product.seo_description),
+        tags: parseTags(product.tags),
+        editionNumber: text(product.edition_number),
+        isUniqueFind: Boolean(product.is_unique_find),
+        lifetimeProductionCap: text(product.lifetime_production_cap),
+        uniqueFindStatus: text(product.unique_find_status || "available"),
+        archiveNote: text(product.archive_note),
+        keepVisibleAfterSellout:
+          product.keep_visible_after_sellout !== 0 &&
+          product.keep_visible_after_sellout !== false,
+        uniqueReleaseAt: product.unique_release_at
+          ? new Date(Number(product.unique_release_at) * 1000)
+              .toISOString()
+              .slice(0, 16)
+          : "",
       });
-      const loadedVariants = (product.variants || []).map((variant) => ({ id: Number(variant.id), size: text(variant.size), color: text(variant.color), sku: text(variant.sku), price: rupeeInput(variant.price), stock: text(variant.stock), lowStockThreshold: text(variant.low_stock_threshold ?? 5), active: variant.active !== 0 && variant.active !== false })).filter((variant) => variant.active);
+      const loadedVariants = (product.variants || [])
+        .map((variant) => ({
+          id: Number(variant.id),
+          size: text(variant.size),
+          color: text(variant.color),
+          sku: text(variant.sku),
+          price: rupeeInput(variant.price),
+          stock: text(variant.stock),
+          lowStockThreshold: text(variant.low_stock_threshold ?? 5),
+          active: variant.active !== 0 && variant.active !== false,
+        }))
+        .filter((variant) => variant.active);
       setVariants(loadedVariants.length ? loadedVariants : [blankVariant(0)]);
-      setImages((product.images || []).map((image, index) => ({ url: text(image.url), altText: text(image.alt_text), sortOrder: Number(image.sort_order ?? index) })));
+      setImages(
+        (product.images || []).map((image, index) => ({
+          url: text(image.url),
+          altText: text(image.alt_text),
+          sortOrder: Number(image.sort_order ?? index),
+        })),
+      );
     };
-    void load().catch((error: Error) => { if (!cancelled) setMessage(error.message); }).finally(() => { if (!cancelled) setBusy(false); });
-    return () => { cancelled = true; };
+    void load()
+      .catch((error: Error) => {
+        if (!cancelled) setMessage(error.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [productId]);
   async function upload(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files || []); if (!files.length) return;
-    setBusy(true); setMessage("");
-    try { const saved = await Promise.all(files.map(async (file) => { const body = new FormData(); body.set("file", file); const response = await fetch("/api/admin/media", { method: "POST", body }); const payload = await response.json(); if (!response.ok) throw new Error(payload.error || "Upload failed."); return { url: String(payload.url), altText: file.name.replace(/\.[^.]+$/, "") }; })); setImages((previous) => [...previous, ...saved]); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to upload images."); } finally { setBusy(false); event.target.value = ""; }
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    setSaved(false);
+    setMessage("");
+    try {
+      const uploaded = await Promise.all(
+        files.map(async (file) => {
+          const body = new FormData();
+          body.set("file", file);
+          const response = await fetch("/api/admin/media", {
+            method: "POST",
+            body,
+          });
+          const payload = await response.json();
+          if (!response.ok) throw new Error(payload.error || "Upload failed.");
+          return {
+            url: String(payload.url),
+            altText: file.name.replace(/\.[^.]+$/, ""),
+          };
+        }),
+      );
+      setImages((previous) => [...previous, ...uploaded]);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Unable to upload images.",
+      );
+    } finally {
+      setUploading(false);
+      event.target.value = "";
+    }
   }
-  async function submit(event: FormEvent) { event.preventDefault(); setBusy(true); setMessage(""); try { const response = await fetch("/api/admin/products", { method: productId ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: productId, ...form, tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean), variants, images: images.map((image, sortOrder) => ({ ...image, sortOrder })) }) }); const payload = await response.json(); if (!response.ok) throw new Error(payload.error || "Unable to save product."); window.location.assign(`/admin/products/${payload.id}`); } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to save product."); } finally { setBusy(false); } }
-  return <form className="pr-editor" onSubmit={submit}><header><div><p>Catalog</p><h1>{productId ? "Edit product" : "Add product"}</h1><span>{productId ? "Update product details, imagery, variants and storefront visibility." : "Create a draft or publish it directly to the storefront."}</span></div><div><Link href="/admin/products" className="pr-editor-cancel">Cancel</Link><button className="pr-primary-action" disabled={busy}>{busy && <LoaderCircle className="pr-spin" size={16} />}Save product</button></div></header>{message && <p className="pr-editor-message">{message}</p>}
-    <div className="pr-editor-grid"><section><EditorCard title="Product details"><div className="pr-fields"><label>Title<input required value={form.name} onChange={(event) => setForm((previous) => ({ ...previous, name: event.target.value, slug: previous.slug || event.target.value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") }))} /></label><label>Slug<input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={form.slug} onChange={(event) => set("slug", event.target.value)} /></label><label className="wide">Short description<textarea maxLength={300} value={form.shortDescription} onChange={(event) => set("shortDescription", event.target.value)} /></label><label className="wide">Full description<textarea value={form.description} onChange={(event) => set("description", event.target.value)} /></label><label>Category<input required value={form.category} onChange={(event) => set("category", event.target.value)} /></label><label>Audience<select value={form.audience} onChange={(event) => set("audience", event.target.value)}><option value="men">Men</option><option value="women">Women</option><option value="unisex">Unisex</option></select></label><label>Product type<input value={form.productType} onChange={(event) => set("productType", event.target.value)} /></label><label>Base colour<input value={form.color} onChange={(event) => set("color", event.target.value)} /></label><label className="wide">Tags <input value={form.tags} onChange={(event) => set("tags", event.target.value)} placeholder="oversized, cotton, summer" /></label></div></EditorCard>
-      <EditorCard title="Pricing & limited offer"><div className="pr-fields"><label>Current selling price (₹)<input required min="0" type="number" step="0.01" value={form.price} onChange={(event) => set("price", event.target.value)} /><small>You can increase or decrease this anytime.</small></label><label>Original struck price (₹)<input min={form.price || "0"} type="number" step="0.01" value={form.compareAtPrice} disabled={!form.compareAtPrice} onChange={(event) => set("compareAtPrice", event.target.value)} /><small>Shown crossed out beside the red offer price.</small></label><label className="pr-check wide"><input type="checkbox" checked={Boolean(form.compareAtPrice)} onChange={(event) => set("compareAtPrice", event.target.checked ? String(Math.max(Number(form.price) || 0, Number(form.price) + 200 || 0)) : "")} />Show as Limited Offer</label><label>Cost price (₹)<input min="0" type="number" step="0.01" value={form.costPrice} onChange={(event) => set("costPrice", event.target.value)} /></label><label>Product SKU<input required value={form.sku} onChange={(event) => set("sku", event.target.value)} /></label></div></EditorCard>
-      <EditorCard title="Edition & Unique Find"><div className="pr-fields"><label>Edition number<input required min="1" type="number" value={form.editionNumber} onChange={(event) => set("editionNumber", event.target.value)} /><small>Unique across the P&amp;R archive. Suggested automatically; editable before save.</small></label><label className="pr-check"><input type="checkbox" checked={form.isUniqueFind} onChange={(event) => set("isUniqueFind", event.target.checked)} />Add to Unique Finds</label>{form.isUniqueFind && <><label>Lifetime production cap<input required min="1" max="5" type="number" value={form.lifetimeProductionCap} onChange={(event) => set("lifetimeProductionCap", event.target.value)} /><small>1–5 physical pieces total across all variants.</small></label><label>Release status<select value={form.uniqueFindStatus} onChange={(event) => set("uniqueFindStatus", event.target.value)}><option value="available">Available</option><option value="scheduled">Scheduled</option><option value="closed">Edition closed</option></select></label><label>Release date/time<input type="datetime-local" value={form.uniqueReleaseAt} onChange={(event) => set("uniqueReleaseAt", event.target.value)} /></label><label className="wide">Archive note<textarea value={form.archiveNote} onChange={(event) => set("archiveNote", event.target.value)} placeholder="Optional private archive note" /></label><label className="pr-check wide"><input type="checkbox" checked={form.keepVisibleAfterSellout} onChange={(event) => set("keepVisibleAfterSellout", event.target.checked)} />Keep visible after sell-out</label></>}</div></EditorCard>
-      <EditorCard title="Variants"><div className="pr-variant-list">{variants.map((variant, index) => <div className="pr-variant-row" key={variant.id ?? index}><input required placeholder="Size" value={variant.size} onChange={(event) => setVariants((previous) => previous.map((item, position) => position === index ? { ...item, size: event.target.value } : item))} /><input required placeholder="Colour" value={variant.color} onChange={(event) => setVariants((previous) => previous.map((item, position) => position === index ? { ...item, color: event.target.value } : item))} /><input required placeholder="Variant SKU" value={variant.sku} onChange={(event) => setVariants((previous) => previous.map((item, position) => position === index ? { ...item, sku: event.target.value } : item))} /><input required min="0" placeholder="Stock" type="number" value={variant.stock} onChange={(event) => setVariants((previous) => previous.map((item, position) => position === index ? { ...item, stock: event.target.value } : item))} /><input min="0" placeholder="Low stock" type="number" value={variant.lowStockThreshold} onChange={(event) => setVariants((previous) => previous.map((item, position) => position === index ? { ...item, lowStockThreshold: event.target.value } : item))} /><button type="button" disabled={variants.length === 1} onClick={() => setVariants((previous) => previous.filter((_, position) => position !== index))} aria-label="Remove variant"><Trash2 size={16} /></button></div>)}</div><button type="button" className="pr-text-button" onClick={() => setVariants((previous) => [...previous, blankVariant(previous.length)])}><Plus size={15} />Add variant</button></EditorCard>
-      <EditorCard title="Search preview"><div className="pr-fields"><label>SEO title<input value={form.seoTitle} onChange={(event) => set("seoTitle", event.target.value)} /></label><label>SEO description<input value={form.seoDescription} onChange={(event) => set("seoDescription", event.target.value)} /></label></div></EditorCard></section>
-      <aside><EditorCard title="Product images"><label className="pr-upload"><Upload size={18} /><span>{busy ? "Uploading…" : "Upload images"}</span><input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={busy} onChange={upload} /></label>{images.length ? <div className="pr-image-grid">{images.map((image, index) => <figure key={image.url}><img src={image.url} alt="" /><input value={image.altText} onChange={(event) => setImages((previous) => previous.map((item, position) => position === index ? { ...item, altText: event.target.value } : item))} aria-label="Image alt text" /><button type="button" onClick={() => setImages((previous) => previous.filter((_, position) => position !== index))}>Remove</button></figure>)}</div> : <p className="pr-empty">Upload front, back, detail or lifestyle images. The first image becomes the cover.</p>}</EditorCard><EditorCard title="Publishing"><label>Status<select value={form.status} onChange={(event) => set("status", event.target.value)}><option value="draft">Draft</option><option value="published">Active / published</option><option value="archived">Archived</option></select></label><label className="pr-check"><input type="checkbox" checked={form.featured} onChange={(event) => set("featured", event.target.checked)} />Featured product</label><label className="pr-check"><input type="checkbox" checked={form.newArrival} onChange={(event) => set("newArrival", event.target.checked)} />New drop</label></EditorCard></aside>
-    </div></form>;
+  const payload = () => ({
+    id: productId,
+    ...form,
+    tags: form.tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter(Boolean),
+    variants,
+    images: images.map((image, sortOrder) => ({ ...image, sortOrder })),
+  });
+  async function saveProduct(
+    body: Record<string, unknown>,
+    method: "POST" | "PUT",
+  ) {
+    const response = await fetch("/api/admin/products", {
+      method,
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    if (!response.ok)
+      throw new Error(result.error || "Unable to save product.");
+    return result as { id: number };
+  }
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setSaved(false);
+    setMessage("");
+    try {
+      const result = await saveProduct(payload(), productId ? "PUT" : "POST");
+      setSaved(true);
+      setMessage("Product saved successfully.");
+      if (!productId) window.location.assign(`/admin/products/${result.id}`);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Unable to save product.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+  async function restorePrevious() {
+    if (
+      !productId ||
+      !window.confirm(
+        "Restore the previous saved version? Your current version will remain available as the next previous version.",
+      )
+    )
+      return;
+    setSaving(true);
+    setSaved(false);
+    setMessage("");
+    try {
+      const response = await fetch(
+        `/api/admin/products?id=${productId}&revision=latest`,
+        { cache: "no-store" },
+      );
+      const body = (await response.json()) as {
+        revision?: { product?: Record<string, unknown> };
+        error?: string;
+      };
+      if (!response.ok || !body.revision?.product)
+        throw new Error(body.error || "No previous version is available.");
+      await saveProduct({ ...body.revision.product, id: productId }, "PUT");
+      setSaved(true);
+      setMessage(
+        "Previous version restored successfully. Refreshing product details…",
+      );
+      window.location.reload();
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to restore the previous version.",
+      );
+      setSaving(false);
+    }
+  }
+  return (
+    <form className="pr-editor" onSubmit={submit}>
+      <header>
+        <div>
+          <p>Catalog</p>
+          <h1>{productId ? "Edit product" : "Add product"}</h1>
+          <span>
+            {productId
+              ? "Update product details, imagery, variants and storefront visibility."
+              : "Create a draft or publish it directly to the storefront."}
+          </span>
+        </div>
+        <div>
+          {productId && (
+            <button
+              type="button"
+              className="pr-secondary-action"
+              disabled={busy}
+              onClick={restorePrevious}
+            >
+              <RotateCcw size={15} />
+              Restore previous
+            </button>
+          )}
+          <Link href="/admin/products" className="pr-editor-cancel">
+            Cancel
+          </Link>
+          <button className="pr-primary-action" disabled={busy}>
+            {saving ? (
+              <LoaderCircle className="pr-spin" size={16} />
+            ) : saved ? (
+              <Check size={16} />
+            ) : null}
+            {saving ? "Saving…" : saved ? "Saved" : "Save product"}
+          </button>
+        </div>
+      </header>
+      {message && (
+        <p className={`pr-editor-message${saved ? " success" : ""}`}>
+          {message}
+        </p>
+      )}
+      <div className="pr-editor-grid">
+        <section>
+          <EditorCard title="Product details">
+            <div className="pr-fields">
+              <label>
+                Title
+                <input
+                  required
+                  value={form.name}
+                  onChange={(event) =>
+                    setForm((previous) => ({
+                      ...previous,
+                      name: event.target.value,
+                      slug:
+                        previous.slug ||
+                        event.target.value
+                          .toLowerCase()
+                          .trim()
+                          .replace(/[^a-z0-9]+/g, "-")
+                          .replace(/(^-|-$)/g, ""),
+                    }))
+                  }
+                />
+              </label>
+              <label>
+                Slug
+                <input
+                  required
+                  pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                  value={form.slug}
+                  onChange={(event) => set("slug", event.target.value)}
+                />
+              </label>
+              <label className="wide">
+                Short description
+                <textarea
+                  maxLength={300}
+                  value={form.shortDescription}
+                  onChange={(event) =>
+                    set("shortDescription", event.target.value)
+                  }
+                />
+              </label>
+              <label className="wide">
+                Full description
+                <textarea
+                  value={form.description}
+                  onChange={(event) => set("description", event.target.value)}
+                />
+              </label>
+              <label>
+                Category
+                <input
+                  required
+                  value={form.category}
+                  onChange={(event) => set("category", event.target.value)}
+                />
+              </label>
+              <label>
+                Audience
+                <select
+                  value={form.audience}
+                  onChange={(event) => set("audience", event.target.value)}
+                >
+                  <option value="men">Men</option>
+                  <option value="women">Women</option>
+                  <option value="unisex">Unisex</option>
+                </select>
+              </label>
+              <label>
+                Product type
+                <input
+                  value={form.productType}
+                  onChange={(event) => set("productType", event.target.value)}
+                />
+              </label>
+              <label>
+                Base colour
+                <input
+                  value={form.color}
+                  onChange={(event) => set("color", event.target.value)}
+                />
+              </label>
+              <label className="wide">
+                Tags{" "}
+                <input
+                  value={form.tags}
+                  onChange={(event) => set("tags", event.target.value)}
+                  placeholder="oversized, cotton, summer"
+                />
+              </label>
+            </div>
+          </EditorCard>
+          <EditorCard title="Pricing & limited offer">
+            <div className="pr-fields">
+              <label>
+                Current selling price (₹)
+                <input
+                  required
+                  min="0"
+                  type="number"
+                  step="0.01"
+                  value={form.price}
+                  onChange={(event) => set("price", event.target.value)}
+                />
+                <small>You can increase or decrease this anytime.</small>
+              </label>
+              <label>
+                Original struck price (₹)
+                <input
+                  min={form.price || "0"}
+                  type="number"
+                  step="0.01"
+                  value={form.compareAtPrice}
+                  disabled={!form.compareAtPrice}
+                  onChange={(event) =>
+                    set("compareAtPrice", event.target.value)
+                  }
+                />
+                <small>Shown crossed out beside the red offer price.</small>
+              </label>
+              <label className="pr-check wide">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.compareAtPrice)}
+                  onChange={(event) =>
+                    set(
+                      "compareAtPrice",
+                      event.target.checked
+                        ? String(
+                            Math.max(
+                              Number(form.price) || 0,
+                              Number(form.price) + 200 || 0,
+                            ),
+                          )
+                        : "",
+                    )
+                  }
+                />
+                Show as Limited Offer
+              </label>
+              <label>
+                Cost price (₹)
+                <input
+                  min="0"
+                  type="number"
+                  step="0.01"
+                  value={form.costPrice}
+                  onChange={(event) => set("costPrice", event.target.value)}
+                />
+              </label>
+              <label>
+                Product SKU
+                <input
+                  required
+                  value={form.sku}
+                  onChange={(event) => set("sku", event.target.value)}
+                />
+              </label>
+            </div>
+          </EditorCard>
+          <EditorCard title="Edition & Unique Find">
+            <div className="pr-fields">
+              <label>
+                Edition number
+                <input
+                  required
+                  min="1"
+                  type="number"
+                  value={form.editionNumber}
+                  onChange={(event) => set("editionNumber", event.target.value)}
+                />
+                <small>
+                  Unique across the P&amp;R archive. Suggested automatically;
+                  editable before save.
+                </small>
+              </label>
+              <label className="pr-check">
+                <input
+                  type="checkbox"
+                  checked={form.isUniqueFind}
+                  onChange={(event) =>
+                    set("isUniqueFind", event.target.checked)
+                  }
+                />
+                Add to Unique Finds
+              </label>
+              {form.isUniqueFind && (
+                <>
+                  <label>
+                    Lifetime production cap
+                    <input
+                      required
+                      min="1"
+                      max="5"
+                      type="number"
+                      value={form.lifetimeProductionCap}
+                      onChange={(event) =>
+                        set("lifetimeProductionCap", event.target.value)
+                      }
+                    />
+                    <small>
+                      1–5 physical pieces total across all variants.
+                    </small>
+                  </label>
+                  <label>
+                    Release status
+                    <select
+                      value={form.uniqueFindStatus}
+                      onChange={(event) =>
+                        set("uniqueFindStatus", event.target.value)
+                      }
+                    >
+                      <option value="available">Available</option>
+                      <option value="scheduled">Scheduled</option>
+                      <option value="closed">Edition closed</option>
+                    </select>
+                  </label>
+                  <label>
+                    Release date/time
+                    <input
+                      type="datetime-local"
+                      value={form.uniqueReleaseAt}
+                      onChange={(event) =>
+                        set("uniqueReleaseAt", event.target.value)
+                      }
+                    />
+                  </label>
+                  <label className="wide">
+                    Archive note
+                    <textarea
+                      value={form.archiveNote}
+                      onChange={(event) =>
+                        set("archiveNote", event.target.value)
+                      }
+                      placeholder="Optional private archive note"
+                    />
+                  </label>
+                  <label className="pr-check wide">
+                    <input
+                      type="checkbox"
+                      checked={form.keepVisibleAfterSellout}
+                      onChange={(event) =>
+                        set("keepVisibleAfterSellout", event.target.checked)
+                      }
+                    />
+                    Keep visible after sell-out
+                  </label>
+                </>
+              )}
+            </div>
+          </EditorCard>
+          <EditorCard title="Variants">
+            <div className="pr-variant-list">
+              {variants.map((variant, index) => (
+                <div className="pr-variant-row" key={variant.id ?? index}>
+                  <input
+                    required
+                    placeholder="Size"
+                    value={variant.size}
+                    onChange={(event) =>
+                      setVariants((previous) =>
+                        previous.map((item, position) =>
+                          position === index
+                            ? { ...item, size: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                  />
+                  <input
+                    required
+                    placeholder="Colour"
+                    value={variant.color}
+                    onChange={(event) =>
+                      setVariants((previous) =>
+                        previous.map((item, position) =>
+                          position === index
+                            ? { ...item, color: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                  />
+                  <input
+                    required
+                    placeholder="Variant SKU"
+                    value={variant.sku}
+                    onChange={(event) =>
+                      setVariants((previous) =>
+                        previous.map((item, position) =>
+                          position === index
+                            ? { ...item, sku: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                  />
+                  <input
+                    required
+                    min="0"
+                    placeholder="Stock"
+                    type="number"
+                    value={variant.stock}
+                    onChange={(event) =>
+                      setVariants((previous) =>
+                        previous.map((item, position) =>
+                          position === index
+                            ? { ...item, stock: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                  />
+                  <input
+                    min="0"
+                    placeholder="Low stock"
+                    type="number"
+                    value={variant.lowStockThreshold}
+                    onChange={(event) =>
+                      setVariants((previous) =>
+                        previous.map((item, position) =>
+                          position === index
+                            ? { ...item, lowStockThreshold: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                  />
+                  <button
+                    type="button"
+                    disabled={variants.length === 1}
+                    onClick={() =>
+                      setVariants((previous) =>
+                        previous.filter((_, position) => position !== index),
+                      )
+                    }
+                    aria-label="Remove variant"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="pr-text-button"
+              onClick={() =>
+                setVariants((previous) => [
+                  ...previous,
+                  blankVariant(previous.length),
+                ])
+              }
+            >
+              <Plus size={15} />
+              Add variant
+            </button>
+          </EditorCard>
+          <EditorCard title="Search preview">
+            <div className="pr-fields">
+              <label>
+                SEO title
+                <input
+                  value={form.seoTitle}
+                  onChange={(event) => set("seoTitle", event.target.value)}
+                />
+              </label>
+              <label>
+                SEO description
+                <input
+                  value={form.seoDescription}
+                  onChange={(event) =>
+                    set("seoDescription", event.target.value)
+                  }
+                />
+              </label>
+            </div>
+          </EditorCard>
+        </section>
+        <aside>
+          <EditorCard title="Product images">
+            <label className="pr-upload">
+              <Upload size={18} />
+                <span>{uploading ? "Uploading…" : loading ? "Loading images…" : "Upload images"}</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif"
+                multiple
+                disabled={busy}
+                onChange={upload}
+              />
+            </label>
+            {images.length ? (
+              <div className="pr-image-grid">
+                {images.map((image, index) => (
+                  <figure key={image.url}>
+                    <img src={image.url} alt="" />
+                    <input
+                      value={image.altText}
+                      onChange={(event) =>
+                        setImages((previous) =>
+                          previous.map((item, position) =>
+                            position === index
+                              ? { ...item, altText: event.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      aria-label="Image alt text"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setImages((previous) =>
+                          previous.filter((_, position) => position !== index),
+                        )
+                      }
+                    >
+                      Remove
+                    </button>
+                  </figure>
+                ))}
+              </div>
+            ) : (
+              <p className="pr-empty">
+                Upload front, back, detail or lifestyle images. The first image
+                becomes the cover.
+              </p>
+            )}
+          </EditorCard>
+          <EditorCard title="Publishing">
+            <label>
+              Status
+              <select
+                value={form.status}
+                onChange={(event) => set("status", event.target.value)}
+              >
+                <option value="draft">Draft</option>
+                <option value="published">Active / published</option>
+                <option value="archived">Archived</option>
+              </select>
+            </label>
+            <label className="pr-check">
+              <input
+                type="checkbox"
+                checked={form.featured}
+                onChange={(event) => set("featured", event.target.checked)}
+              />
+              Featured product
+            </label>
+            <label className="pr-check">
+              <input
+                type="checkbox"
+                checked={form.newArrival}
+                onChange={(event) => set("newArrival", event.target.checked)}
+              />
+              New drop
+            </label>
+          </EditorCard>
+        </aside>
+      </div>
+    </form>
+  );
 }
-function EditorCard({ title, children }: { title: string; children: React.ReactNode }) { return <section className="pr-editor-card"><h2>{title}</h2>{children}</section>; }
+function EditorCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="pr-editor-card">
+      <h2>{title}</h2>
+      {children}
+    </section>
+  );
+}
