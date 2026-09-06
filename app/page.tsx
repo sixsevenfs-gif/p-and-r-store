@@ -6,7 +6,7 @@ import Image from "next/image";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { products as seedProducts, type Product } from "./product-data";
 
-type View = "home" | "collection" | "product" | "cart" | "checkout" | "about" | "account" | "unique";
+type View = "home" | "collection" | "product" | "cart" | "checkout" | "about" | "account" | "unique" | "refund-policy";
 type AccountTab = "overview" | "orders" | "wishlist" | "addresses" | "wallet";
 const blurDataURL = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nNDAwJyBoZWlnaHQ9JzUwMCcgdmlld0JveD0nMCAwIDQwMCA1MDAnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zyc+PHJlY3Qgd2lkdGg9JzQwMCcgaGVpZ2h0PSc1MDAnIGZpbGw9JyNmM2YzZjAnLz48L3N2Zz4=";
 const products = seedProducts;
@@ -132,6 +132,8 @@ export default function Home() {
 
       {view === "about" && <AboutPage sections={cmsSections}/>}
 
+      {view === "refund-policy" && <RefundPolicy/>}
+
       {view === "unique" && <UniqueFindsPage products={uniqueProducts} open={openProduct} add={add} shop={() => goCollection("All")}/>}
 
       {view === "collection" && <motion.div key="collection" className="collection-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
@@ -174,6 +176,7 @@ function viewFromPath(pathname:string):View {
   if(pathname==="/product")return "product";
   if(pathname==="/checkout")return "checkout";
   if(pathname==="/about")return "about";
+  if(pathname==="/refund-policy")return "refund-policy";
   if(pathname==="/account")return "account";
   return "home";
 }
@@ -207,6 +210,17 @@ function AboutPage({sections}:{sections:ContentSection[] | null}) {
     {hero&&<section className="about-hero"><Image src={hero.image_url||"/images/bone-editorial.jpg"} alt="P&R model wearing an oversized essential" fill priority sizes="100vw"/><div className="about-hero-shade"/><motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{duration:.8,ease:[.22,1,.36,1]}}><p className="about-kicker">ABOUT P&R</p><h1>{hero.title}</h1><span>{hero.subtitle}</span></motion.div></section>}
     {ordered.map(renderSection)}
   </motion.div>;
+}
+
+function RefundPolicy() {
+  return <motion.article className="policy-page" initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-10}}>
+    <header><p>P&amp;R / CUSTOMER CARE</p><h1>Refund Policy</h1><span>Last updated: 7 September 2026</span></header>
+    <section><h2>Returns</h2><p>If your order is eligible for return, please contact P&amp;R support within 7 days of delivery. Returned pieces must be unworn, unwashed, undamaged and sent back with their original tags and packaging.</p><p>Once the returned piece reaches us and passes inspection, we will approve the refund.</p></section>
+    <section><h2>Refunds to P&amp;R Wallet</h2><p>Approved return refunds are issued as P&amp;R Wallet credit for the full eligible order amount. Wallet credit is added to the same customer account used to place the order.</p><p>You can use this credit at checkout on a future P&amp;R purchase. It is visible under Account → Wallet and can be applied together with the rest of your payment at checkout.</p></section>
+    <section><h2>Timing</h2><p>After the return is received and approved, wallet credit is normally added immediately. You will see a refund update in your order timeline and in your wallet transaction history.</p></section>
+    <section><h2>Non-returnable items</h2><p>Items marked final sale, worn or washed pieces, products without original tags, and items damaged after delivery are not eligible for return or refund.</p></section>
+    <section><h2>Need help?</h2><p>For a return or refund question, contact P&amp;R support from your account with your order number. We will help you with the next step.</p></section>
+  </motion.article>;
 }
 
 function ProductPrice({product,compact=false}:{product:Product;compact?:boolean}) {
@@ -544,4 +558,4 @@ function Cart({cart,close,remove,checkout}:{cart:Product[],close:()=>void,remove
 
 function SearchOverlay({close,openProduct}:{close:()=>void,openProduct:(p:Product)=>void}){const [query,setQuery]=useState("");const input=useRef<HTMLInputElement>(null);useEffect(()=>{input.current?.focus();const key=(e:KeyboardEvent)=>e.key==="Escape"&&close();addEventListener("keydown",key);return()=>removeEventListener("keydown",key)},[close]);const results=query.trim()?products.filter(p=>`${p.name} ${p.color} ${p.category}`.toLowerCase().includes(query.toLowerCase())):products.slice(0,4);return <motion.div className="search-overlay" role="dialog" aria-modal="true" aria-label="Product search" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><header><label htmlFor="site-search">Search P&R</label><input ref={input} id="site-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search products, colour or category"/><button onClick={close} aria-label="Close search"><X/></button></header><div className="search-body"><p>{query ? `${results.length} RESULTS` : "TRENDING NOW"}</p>{results.length?<div>{results.map(p=><button key={p.slug} onClick={()=>{close();openProduct(p)}}><Image src={p.gallery[0].src} alt="" width={90} height={112}/><span><b>{p.name}</b><small>{p.color} / {p.category}</small></span><strong>₹{p.price.toLocaleString("en-IN")}</strong></button>)}</div>:<div className="search-empty"><h2>Nothing found.</h2><span>Try “black”, “women” or “oversized”.</span></div>}</div></motion.div>}
 function Newsletter(){const [status,setStatus]=useState<"idle"|"loading"|"success"|"error">("idle");const [message,setMessage]=useState("");const submit=async(e:FormEvent<HTMLFormElement>)=>{e.preventDefault();const form=e.currentTarget;const email=new FormData(form).get("email")?.toString().trim()??"";if(!/^\\S+@\\S+\\.\\S+$/.test(email)){setStatus("error");setMessage("Enter a valid email address.");return}setStatus("loading");setMessage("");try{const response=await fetch("/api/newsletter",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email})});const result=await response.json() as {error?:string};if(!response.ok)throw new Error(result.error??"Unable to subscribe.");setStatus("success");setMessage("You’re on the list.");form.reset()}catch(error){setStatus("error");setMessage(error instanceof Error?error.message:"Unable to subscribe.")}};return <section className="newsletter"><p>PRIVATE NOTES / P&R</p><h2>Updates worth opening.</h2><span>New editions, restocks and occasional studio notes.</span><form onSubmit={submit}><label className="sr-only" htmlFor="newsletter-email">Email address</label><input id="newsletter-email" name="email" type="email" placeholder="Enter your email address" aria-describedby="newsletter-status" required/><button aria-label="Subscribe" disabled={status==="loading"}>{status==="loading"?"…":<ArrowRight/>}</button></form><small id="newsletter-status" role="status">{message||"By subscribing, you agree to receive occasional updates from P&R."}</small></section>}
-function Footer({go,goAccount}:{go:(v:View)=>void;goAccount:(tab?:AccountTab)=>void}){return <footer className="site-footer"><button className="footer-logo" onClick={()=>go("home")}>P<span>&</span>R</button><div><p>Explore</p><button onClick={()=>go("collection")}>Shop all</button><button onClick={()=>go("collection")}>Men</button><button onClick={()=>go("collection")}>Women</button></div><div><p>Account</p><button onClick={()=>goAccount()}>Profile</button><button onClick={()=>goAccount("orders")}>My orders</button><button onClick={()=>goAccount("wishlist")}>Wishlist</button><button onClick={()=>goAccount("wallet")}>Wallet</button></div><div><p>Help</p><button onClick={()=>go("about")}>Shipping & Returns</button><button onClick={()=>go("collection")}>Size Guide</button><button onClick={()=>go("about")}>Contact</button></div><div><p>Studio</p><button>Instagram</button><button>Privacy</button><button>Terms</button></div><small>© 2026 P&R STUDIOS — INDIA</small></footer>}
+function Footer({go,goAccount}:{go:(v:View)=>void;goAccount:(tab?:AccountTab)=>void}){return <footer className="site-footer"><button className="footer-logo" onClick={()=>go("home")}>P<span>&</span>R</button><div><p>Explore</p><button onClick={()=>go("collection")}>Shop all</button><button onClick={()=>go("collection")}>Men</button><button onClick={()=>go("collection")}>Women</button></div><div><p>Account</p><button onClick={()=>goAccount()}>Profile</button><button onClick={()=>goAccount("orders")}>My orders</button><button onClick={()=>goAccount("wishlist")}>Wishlist</button><button onClick={()=>goAccount("wallet")}>Wallet</button></div><div><p>Help</p><button onClick={()=>go("about")}>Shipping & Returns</button><button onClick={()=>go("refund-policy")}>Refund Policy</button><button onClick={()=>go("collection")}>Size Guide</button><button onClick={()=>go("about")}>Contact</button></div><div><p>Studio</p><button>Instagram</button><button>Privacy</button><button>Terms</button></div><small>© 2026 P&R STUDIOS — INDIA</small></footer>}
