@@ -107,3 +107,11 @@ test("keeps a Unique Find secured through a mobile checkout", async () => {
   assert.match(orders, /checkoutRecoveredHolds/);
   assert.match(page, /Build your rotation/);
 });
+
+test("offers a complete customer-support complaint form", async () => {
+  const contact = await read("../app/contact/page.tsx");
+  assert.match(contact, /support@pnr\.com/);
+  assert.match(contact, /Complaint/);
+  assert.match(contact, /mailto:/);
+  assert.match(contact, /Order number/);
+});
