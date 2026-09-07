@@ -128,7 +128,7 @@ export default function Home() {
 
         <section className="about" id="about"><motion.div {...fade}><p>P&R / THE STANDARD</p><h2>Less noise.<br/><em>More presence.</em></h2></motion.div><motion.div {...fade}><p>P&R was created around a simple belief: the things you wear most should be the things made best.</p><p>Our first study is the oversized T-shirt—reworked through proportion, weight and restraint. Made for movement. Designed for repetition.</p><div className="facts"><span>Designed in India</span><span>240 GSM cotton</span><span>Unisex proportions</span></div></motion.div></section>
         <section className="drop core"><motion.div className="section-head" {...fade}><div><p>CORE ESSENTIALS</p><h2>The daily rotation.</h2></div><button onClick={() => goCollection("All")}>Shop all <ArrowRight size={14}/></button></motion.div><div className="product-grid core-products">{standardProducts.slice(4,8).map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div></section>
-        <section className="campaign-break"><Image src="/images/campaign-hero.jpg" alt="P&R Edition 001 campaign" fill sizes="100vw"/><div><p>EDITION 001</p><h2>Built for everyday.</h2><button onClick={() => goCollection("All")}>Explore the collection <ArrowRight size={14}/></button></div></section>
+        <section className="campaign-break"><Image src="/images/home-final-campaign.jpg" alt="P&R oversized T-shirt campaign" fill sizes="100vw"/><button className="campaign-image-link" onClick={() => goCollection("All")} aria-label="Explore the collection"/></section>
         <Newsletter/>
       </motion.div>}
 
