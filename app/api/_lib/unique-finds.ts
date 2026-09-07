@@ -1,6 +1,7 @@
 import { env } from "@/db/runtime";
 
-export const UNIQUE_RESERVATION_SECONDS = 10 * 60;
+// A customer can complete a normal mobile checkout without losing their secured item.
+export const UNIQUE_RESERVATION_SECONDS = 45 * 60;
 
 export async function releaseExpiredUniqueReservations() {
   const expired = await env.DB.prepare(`SELECT id,variant_id,quantity FROM unique_find_reservations

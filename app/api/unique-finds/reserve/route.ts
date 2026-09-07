@@ -24,7 +24,11 @@ export async function POST(request: Request) {
   const cart = await cartFor(customer.id);
   if (!cart || !product) return Response.json({ error: "Unable to prepare your bag." }, { status: 500 });
   const alreadyHeld = await env.DB.prepare("SELECT id,expires_at FROM unique_find_reservations WHERE customer_id=? AND variant_id=? AND status='active' AND expires_at>unixepoch()").bind(customer.id, variantId).first<{ id: number; expires_at: number }>();
-  if (alreadyHeld) return Response.json({ reserved: true, expiresAt: alreadyHeld.expires_at, idempotent: true });
+  if (alreadyHeld) {
+    const expiresAt = Math.floor(Date.now() / 1000) + UNIQUE_RESERVATION_SECONDS;
+    await env.DB.prepare("UPDATE unique_find_reservations SET expires_at=?,updated_at=unixepoch() WHERE id=? AND status='active'").bind(expiresAt, alreadyHeld.id).run();
+    return Response.json({ reserved: true, expiresAt, idempotent: true });
+  }
   const held = await env.DB.prepare(`UPDATE product_variants SET reserved_stock=reserved_stock+1
     WHERE id=? AND active=1 AND stock-reserved_stock>=1`).bind(variantId).run();
   if (Number(held.meta.changes ?? 0) !== 1) return Response.json({ error: "SOLD OUT" }, { status: 409 });
