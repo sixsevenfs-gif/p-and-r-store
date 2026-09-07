@@ -7,11 +7,12 @@ const supportEmail = "support@pnr.com";
 
 export default function ContactPage() {
   const [sent, setSent] = useState(false);
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const subject = `[P&R Support] ${form.get("topic")} — ${form.get("order") || "No order number"}`;
     const body = [`Name: ${form.get("name")}`, `Email: ${form.get("email")}`, `Order number: ${form.get("order") || "Not available"}`, "", "Issue:", String(form.get("message") || "")].join("\n");
+    await fetch("/api/email-contacts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ email: form.get("email"), source: "support" }) }).catch(() => undefined);
     setSent(true);
     window.location.href = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };

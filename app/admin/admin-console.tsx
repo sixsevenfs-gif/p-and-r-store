@@ -35,7 +35,7 @@ async function adminJson<T>(url: string, init: RequestInit = {}): Promise<T> {
 const navigation = [
   { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard }, { heading: "Store" },
   { label: "Products", href: "/admin/products", icon: Tag }, { label: "Collections", href: "/admin/categories", icon: Boxes }, { label: "Inventory", href: "/admin/inventory", icon: Package }, { label: "Media", href: "/admin/media", icon: ImageIcon }, { heading: "Sales" },
-  { label: "Orders", href: "/admin/orders", icon: ShoppingBag }, { label: "Customers", href: "/admin/customers", icon: Users }, { label: "Coupons", href: "/admin/coupons", icon: Tag }, { heading: "Configuration" },
+  { label: "Orders", href: "/admin/orders", icon: ShoppingBag }, { label: "Customers", href: "/admin/customers", icon: Users }, { label: "Emails", href: "/admin/emails", icon: Users }, { label: "Coupons", href: "/admin/coupons", icon: Tag }, { heading: "Configuration" },
   { label: "Shipping", href: "/admin/shipping", icon: Truck }, { label: "Payments", href: "/admin/payments", icon: CreditCard }, { label: "Settings", href: "/admin/settings", icon: Settings }, { label: "Admin Users", href: "/admin/admin-users", icon: ShieldCheck }, { label: "Audit Log", href: "/admin/audit-log", icon: FileText },
 ] as const;
 const resources: Record<string, string> = { products: "products", categories: "categories", inventory: "product_variants", orders: "orders", customers: "customers", coupons: "coupons", shipping: "store_settings", payments: "store_settings", settings: "store_settings", "admin-users": "admin_roles", "audit-log": "audit_logs" };
@@ -92,7 +92,14 @@ function ResourceList({ active, search }: { active: string; search: string }) {
   if (active === "products") return <ProductList search={search} />;
   if (active === "inventory") return <InventoryManager search={search} />;
   if (active === "customers") return <CustomerManager search={search} />;
+  if (active === "emails") return <EmailManager search={search} />;
   return <GenericResourceList active={active} search={search} />;
+}
+function EmailManager({ search }: { search: string }) {
+  const [rows, setRows] = useState<Row[]>([]), [message, setMessage] = useState("");
+  const load = useCallback(() => { fetch(`/api/admin/emails?q=${encodeURIComponent(search)}`, { cache: "no-store" }).then(async response => { const body = await response.json() as { emails?: Row[]; error?: string }; if (!response.ok) throw new Error(body.error || "Unable to load emails."); setRows(body.emails || []); setMessage(""); }).catch((error: Error) => setMessage(error.message)); }, [search]);
+  useEffect(() => { void load(); }, [load]);
+  return <><div className="pr-resource-heading"><div><p>Customer data</p><h1>Emails</h1><span>Every unique email provided through account, checkout, updates or support.</span></div></div>{message && <p className="pr-editor-message">{message}</p>}<section className="pr-panel pr-product-list"><div className="pr-table-scroll"><table><thead><tr><th>Email</th><th>First captured from</th><th>Last captured from</th><th>First seen</th><th>Last seen</th></tr></thead><tbody>{rows.map(row => <tr key={String(row.id)}><td><b>{String(row.email)}</b></td><td>{title(String(row.first_source || "unknown"))}</td><td>{title(String(row.last_source || "unknown"))}</td><td>{fullDate(row.first_seen_at)}</td><td>{fullDate(row.last_seen_at)}</td></tr>)}</tbody></table></div>{!rows.length && <p className="pr-empty">No matching email addresses yet.</p>}</section></>;
 }
 function CustomerManager({ search }: { search: string }) {
   const [rows,setRows]=useState<Row[]>([]),[selected,setSelected]=useState<Row|null>(null),[detail,setDetail]=useState<{customer:Row;orders:Row[];wishlist:Row[];logins:Row[]}|null>(null),[message,setMessage]=useState("");

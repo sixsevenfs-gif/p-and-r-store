@@ -43,6 +43,7 @@ function replacePlaceholders(input: string) {
 const identityTables = new Set([
   "customers",
   "newsletter_subscribers",
+  "email_contacts",
   "orders",
   "order_items",
   "addresses",

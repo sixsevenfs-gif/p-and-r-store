@@ -1,14 +1,13 @@
 import { getDb } from "../../../db";
 import { newsletterSubscribers } from "../../../db/schema";
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { captureEmailContact, normalizeContactEmail } from "../_lib/email-contacts";
 
 export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as { email?: string };
-    const email = payload.email?.trim().toLowerCase() ?? "";
+    const email = normalizeContactEmail(payload.email);
 
-    if (!emailPattern.test(email)) {
+    if (!email) {
       return Response.json({ error: "Enter a valid email address." }, { status: 400 });
     }
 
@@ -16,6 +15,7 @@ export async function POST(request: Request) {
       .insert(newsletterSubscribers)
       .values({ email })
       .onConflictDoNothing();
+    await captureEmailContact(email, "newsletter");
 
     return Response.json({ subscribed: true }, { status: 201 });
   } catch {

@@ -4,6 +4,7 @@ import { ensureCatalog } from "../_lib/catalog";
 import { getAuthSession } from "../../auth";
 import { normalizeIndianPhone } from "../_lib/account";
 import { releaseExpiredUniqueReservations } from "../_lib/unique-finds";
+import { captureEmailContact, normalizeContactEmail } from "../_lib/email-contacts";
 
 const pinPattern = /^\d{6}$/;
 const paymentMethods = new Set(["cod", "razorpay"]);
@@ -32,9 +33,10 @@ export async function POST(request: Request) {
     const body = await request.json() as Record<string, unknown>;
     const phone = normalizeIndianPhone(clean(body.phone, 24)), firstName = clean(body.firstName, 60), lastName = clean(body.lastName, 60);
     const address = clean(body.address, 160), city = clean(body.city, 80), pinCode = clean(body.pinCode, 6);
+    const contactEmail = normalizeContactEmail(body.email);
     const checkoutKey = clean(body.checkoutKey, 64), paymentMethod = clean(body.paymentMethod || "cod", 20).toLowerCase();
     const items = Array.isArray(body.items) ? body.items as IncomingItem[] : [];
-    if (!phone || !firstName || !lastName || !address || !city || !pinPattern.test(pinCode)) return Response.json({ error: "Complete all delivery details with a valid mobile number and 6-digit PIN code." }, { status: 400 });
+    if (!phone || !contactEmail || !firstName || !lastName || !address || !city || !pinPattern.test(pinCode)) return Response.json({ error: "Complete all delivery details with a valid mobile number, email address and 6-digit PIN code." }, { status: 400 });
     if (!/^[0-9a-f-]{36}$/i.test(checkoutKey) || !paymentMethods.has(paymentMethod)) return Response.json({ error: "Invalid checkout session or payment method." }, { status: 400 });
     if (!items.length || items.length > 30 || items.some((item) => (!Number.isInteger(item.variantId) && !(clean(item.productSlug, 120) && clean(item.size, 16))) || !Number.isInteger(item.quantity) || Number(item.quantity) < 1 || Number(item.quantity) > 10)) return Response.json({ error: "Your bag contains an invalid item." }, { status: 400 });
     const session = await getAuthSession(request);
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
     const email = session?.user?.email?.trim().toLowerCase() || `phone-${phone.replace(/\D/g, "")}@members.invalid`;
     const requestedWalletAmount = Math.max(0, Math.floor(Number(body.walletAmount) || 0));
     const signedInCustomer = session?.user ? await requireApiCustomer(request) : null;
+    await captureEmailContact(contactEmail, "checkout");
 
     await ensureCatalog();
     await releaseExpiredUniqueReservations();
@@ -95,7 +98,7 @@ export async function POST(request: Request) {
     const result = await env.DB.prepare(`INSERT INTO orders(customer_id,checkout_key,subtotal_amount,discount_amount,shipping_amount,total_amount,wallet_amount,payable_amount,status,payment_status,payment_method,shipping_address,coupon_code)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(customer.id, checkoutKey, subtotal, coupon.amount, shipping, total, walletPaise, total - walletPaise,
       paymentMethod === "cod" ? "pending" : "awaiting_payment", "pending", paymentMethod,
-      JSON.stringify({ firstName, lastName, address, city, pinCode, phone }), coupon.code).run();
+      JSON.stringify({ firstName, lastName, address, city, pinCode, phone, email: contactEmail }), coupon.code).run();
     orderId = Number(result.meta.last_row_id);
     if (!orderId) throw new Error("Order creation failed.");
     for (const line of lines) {

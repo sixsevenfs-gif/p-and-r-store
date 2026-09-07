@@ -26,6 +26,15 @@ export const newsletterSubscribers = sqliteTable("newsletter_subscribers", {
   subscribedAt: integer("subscribed_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
 }, (table) => [uniqueIndex("newsletter_subscribers_email_idx").on(table.email)]);
 
+export const emailContacts = sqliteTable("email_contacts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  email: text("email").notNull().unique(),
+  firstSource: text("first_source").notNull().default("unknown"),
+  lastSource: text("last_source").notNull().default("unknown"),
+  firstSeenAt: integer("first_seen_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+  lastSeenAt: integer("last_seen_at", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`),
+}, (table) => [index("email_contacts_last_seen_idx").on(table.lastSeenAt)]);
+
 export const orders = sqliteTable("orders", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   customerId: integer("customer_id").notNull().references(() => customers.id),
