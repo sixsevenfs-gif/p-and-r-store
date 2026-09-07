@@ -5,7 +5,7 @@ import test from "node:test";
 const read = (path) => readFile(new URL(path, import.meta.url), "utf8");
 
 test("keeps the premium hero and exposes the complete account surface", async () => {
-  const page = await read("../app/page.tsx");
+  const [page, styles] = await Promise.all([read("../app/page.tsx"), read("../app/globals.css")]);
   assert.match(page, /className="hero"/);
   assert.match(page, /Oversized<br\/>Essentials/);
   assert.match(page, /Create account/);
@@ -16,6 +16,7 @@ test("keeps the premium hero and exposes the complete account surface", async ()
   assert.doesNotMatch(page, /api\/auth\/sign-out/);
   assert.match(page, /goWishlist/);
   assert.match(page, /standalone/);
+  assert.match(styles, /\.nav-right>button:first-child\{display:flex!important\}/);
 });
 
 test("persists referral and wallet state in relational records", async () => {
