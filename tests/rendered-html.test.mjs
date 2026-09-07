@@ -13,7 +13,9 @@ test("keeps the premium hero and exposes the complete account surface", async ()
   assert.match(page, /Profile updated/);
   assert.match(page, /SAVED ADDRESSES/);
   assert.match(page, /TRANSACTION HISTORY/);
-  assert.match(page, /api\/auth\/sign-out/);
+  assert.doesNotMatch(page, /api\/auth\/sign-out/);
+  assert.match(page, /goWishlist/);
+  assert.match(page, /standalone/);
 });
 
 test("persists referral and wallet state in relational records", async () => {
