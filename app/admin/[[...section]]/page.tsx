@@ -8,5 +8,6 @@ export default async function AdminPage({ params }: { params: Promise<{ section?
   const admin = await requireAdmin();
   if (!admin) redirect("/admin/login");
   const { section = ["dashboard"] } = await params;
+  if (["reviews", "homepage", "navigation", "announcements"].includes(section[0])) redirect("/admin/dashboard");
   return <AdminConsole email={admin.email} role={admin.role} name="Store admin" section={section.join("/")} />;
 }
