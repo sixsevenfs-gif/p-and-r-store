@@ -1,20 +1,26 @@
 import { requireAdmin } from "../../_lib/admin";
 import { createSupabaseServerClient } from "../../../supabase/server";
+import { env } from "@/db/runtime";
 
 const BUCKET = "product-images";
 
 export async function GET(request: Request) {
   if (!(await requireAdmin(request))) return Response.json({ error: "Admin access required" }, { status: 403 });
   try {
-  const url = new URL(request.url);
-  const q = (url.searchParams.get("q") || "").slice(0, 100);
-  const filter = url.searchParams.get("filter") || "all";
-  const supabase = await createSupabaseServerClient();
-  let query = supabase.from("media_assets").select("*").order("created_at", { ascending: false }).limit(100);
-  query = filter === "trash" ? query.not("trashed_at", "is", null) : query.is("trashed_at", null);
-  if (q) query = query.or(`filename.ilike.%${q.replaceAll(",", "")}%,display_name.ilike.%${q.replaceAll(",", "")}%,alt_text.ilike.%${q.replaceAll(",", "")}%`);
-  const { data, error } = await query;
-    return error ? Response.json({ error: error.message }, { status: 400 }) : Response.json({ data: data?.map((row) => ({ ...row, usage_count: 0 })) });
+    const url = new URL(request.url);
+    const q = (url.searchParams.get("q") || "").slice(0, 100).toLowerCase();
+    const filter = url.searchParams.get("filter") || "all";
+    const where = [filter === "trash" ? "trashed_at IS NOT NULL" : "trashed_at IS NULL"];
+    const params: unknown[] = [];
+    if (q) { where.push("(lower(filename) LIKE ? OR lower(display_name) LIKE ? OR lower(alt_text) LIKE ?)"); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+    const rows = await env.DB.prepare(`SELECT id,object_key,filename,content_type,size_bytes,alt_text,display_name,category,uploaded_by,trashed_at,created_at,data IS NOT NULL AS stored_in_database FROM media_assets WHERE ${where.join(" AND ")} ORDER BY created_at DESC LIMIT 100`).bind(...params).all<Record<string, unknown>>();
+    const supabase = await createSupabaseServerClient();
+    const data = rows.results.map((row) => {
+      const storedLocally = Boolean(row.stored_in_database);
+      const publicUrl = storedLocally ? `/api/media-db/${row.id}` : supabase.storage.from(BUCKET).getPublicUrl(String(row.object_key)).data.publicUrl;
+      return { ...row, url: publicUrl, usage_count: 0 };
+    });
+    return Response.json({ data });
   } catch (error) {
     console.error("Admin media load failed", error);
     return Response.json({ error: "Unable to load media. Please retry." }, { status: 500 });
@@ -31,24 +37,23 @@ export async function POST(request: Request) {
     return Response.json({ error: "Upload a JPG, PNG, WebP or AVIF under 8 MB." }, { status: 400 });
   }
   const ext = file.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "").toLowerCase() || "jpg";
-  const key = `products/${crypto.randomUUID()}.${ext}`;
-  const supabase = await createSupabaseServerClient();
-  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(key, file, { contentType: file.type, upsert: false });
-  if (uploadError) return Response.json({ error: uploadError.message }, { status: 400 });
-  const { error: recordError } = await supabase.from("media_assets").insert({
-    object_key: key,
-    filename: file.name.slice(0, 200),
-    content_type: file.type,
-    size_bytes: file.size,
-    display_name: file.name.slice(0, 200),
-    uploaded_by: admin.userId,
-  });
-  if (recordError) {
-    await supabase.storage.from(BUCKET).remove([key]);
-    return Response.json({ error: recordError.message }, { status: 400 });
+  const key = `database/${crypto.randomUUID()}.${ext}`;
+  try {
+    const result = await env.DB.prepare(`INSERT INTO media_assets(object_key,filename,content_type,size_bytes,display_name,uploaded_by,data)
+      VALUES (?,?,?,?,?,?,?)`).bind(
+      key,
+      file.name.slice(0, 200),
+      file.type,
+      file.size,
+      file.name.slice(0, 200),
+      admin.userId,
+      new Uint8Array(await file.arrayBuffer()),
+    ).run();
+    return Response.json({ url: `/api/media-db/${result.meta.last_row_id}` }, { status: 201 });
+  } catch (error) {
+    console.error("Admin media upload failed", error);
+    return Response.json({ error: "Unable to save this image. Please retry." }, { status: 500 });
   }
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(key);
-  return Response.json({ url: data.publicUrl }, { status: 201 });
 }
 
 export async function PATCH(request: Request) {
@@ -57,12 +62,11 @@ export async function PATCH(request: Request) {
   const id = Number(body.id);
   const action = String(body.action || "");
   if (!Number.isInteger(id)) return Response.json({ error: "Invalid media item." }, { status: 400 });
-  const supabase = await createSupabaseServerClient();
   const changes = action === "trash" ? { trashed_at: new Date().toISOString() }
     : action === "restore" ? { trashed_at: null }
     : action === "metadata" ? { alt_text: String(body.altText || "").slice(0, 180), display_name: String(body.displayName || "").slice(0, 200), category: String(body.category || "product").slice(0, 50) }
     : null;
   if (!changes) return Response.json({ error: "Unsupported media action." }, { status: 400 });
-  const { error } = await supabase.from("media_assets").update(changes).eq("id", id);
-  return error ? Response.json({ error: error.message }, { status: 400 }) : Response.json({ updated: true });
+  await env.DB.prepare(`UPDATE media_assets SET ${Object.keys(changes).map((key) => `${key}=?`).join(",")} WHERE id=?`).bind(...Object.values(changes), id).run();
+  return Response.json({ updated: true });
 }

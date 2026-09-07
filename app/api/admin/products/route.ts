@@ -27,7 +27,7 @@ const paise = (value: unknown, nullable = false): number | null => {
   return Number.isSafeInteger(number) && number >= 0 ? number : NaN;
 };
 const validImageUrl = (value: string) => {
-  if (value.startsWith("/products/") || value.startsWith("/api/media/"))
+  if (value.startsWith("/products/") || value.startsWith("/api/media/") || value.startsWith("/api/media-db/"))
     return true;
   try {
     const url = new URL(value),
