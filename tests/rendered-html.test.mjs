@@ -115,3 +115,13 @@ test("offers a complete customer-support complaint form", async () => {
   assert.match(contact, /mailto:/);
   assert.match(contact, /Order number/);
 });
+
+test("keeps mobile product and campaign actions reachable", async () => {
+  const [page, styles, uniqueStyles] = await Promise.all([
+    read("../app/page.tsx"), read("../app/globals.css"), read("../app/unique-finds.css"),
+  ]);
+  assert.match(page, /mobile-gallery-close/);
+  assert.match(page, /close=\{\(\) => go\("collection"\)\}/);
+  assert.match(styles, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(uniqueStyles, /inset:0;width:100%;height:100%/);
+});

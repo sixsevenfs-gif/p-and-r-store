@@ -146,7 +146,7 @@ export default function Home() {
 
       {view === "product" && <motion.div key="product" className="product-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
         <button className="back" onClick={() => go("collection")}><ArrowLeft size={15}/> Back to collection</button>
-        <ProductGallery product={selected}/>
+        <ProductGallery product={selected} close={() => go("collection")}/>
         <ProductInfo product={selected} onAdd={(item) => add(item)} onBuy={(item) => { add(item); setCartOpen(false); go("checkout"); }}/>
       </motion.div>}
 
@@ -342,7 +342,7 @@ function CartPage({cart,add,updateQuantity,updateSize,openProduct,shop,checkout}
   </>
 }
 
-function ProductGallery({product}:{product:Product}) {
+function ProductGallery({product,close}:{product:Product;close:()=>void}) {
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const [lightboxSeen, setLightboxSeen] = useState(0);
@@ -401,6 +401,7 @@ function ProductGallery({product}:{product:Product}) {
       {images.map((image, index) => <motion.button id={`product-shot-${product.id}-${index}`} className="gallery-frame" key={image.key} onClick={() => openAt(index)} initial={{opacity:0, y:22}} whileInView={{opacity:1, y:0}} viewport={{once:true, margin:"-15%"}} transition={{duration:.7, ease:[.22,1,.36,1]}}><Image src={image.src} alt={`${product.name} ${image.label}`} fill sizes="(max-width: 1100px) 65vw, 55vw" placeholder="blur" blurDataURL={blurDataURL}/><span>{image.label}</span></motion.button>)}
     </div>
     <div className="mobile-gallery">
+      <button className="mobile-gallery-close" onClick={close} aria-label="Back to collection"><X size={20}/></button>
       <motion.div className="mobile-track" drag="x" dragConstraints={{left:0,right:0}} onDragEnd={(_, info) => { if (info.offset.x < -55) setActive((active + 1) % images.length); if (info.offset.x > 55) setActive((active - 1 + images.length) % images.length); }} animate={{x:`-${active * 100}%`}} transition={{duration:.35, ease:[.22,1,.36,1]}}>
         {images.map((image, index) => <button className="mobile-slide" key={image.key} onClick={() => openAt(index)}><Image src={image.src} alt={`${product.name} ${image.label}`} fill sizes="100vw" placeholder="blur" blurDataURL={blurDataURL}/></button>)}
       </motion.div>
