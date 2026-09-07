@@ -95,12 +95,14 @@ test("credits completed return refunds to the P&R wallet once", async () => {
 });
 
 test("keeps a Unique Find secured through a mobile checkout", async () => {
-  const [reservation, reserveRoute, page] = await Promise.all([
+  const [reservation, reserveRoute, orders, page] = await Promise.all([
     read("../app/api/_lib/unique-finds.ts"),
     read("../app/api/unique-finds/reserve/route.ts"),
+    read("../app/api/orders/route.ts"),
     read("../app/page.tsx"),
   ]);
   assert.match(reservation, /45 \* 60/);
   assert.match(reserveRoute, /SET expires_at=\?/);
+  assert.match(orders, /checkoutRecoveredHolds/);
   assert.match(page, /Build your rotation/);
 });

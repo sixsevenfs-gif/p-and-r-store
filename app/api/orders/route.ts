@@ -27,6 +27,7 @@ export async function POST(request: Request) {
   let orderId: number | null = null;
   let walletDebit: { customerId: number; amount: number } | null = null;
   const decremented: Line[] = [];
+  const checkoutRecoveredHolds: Array<{ variantId:number; quantity:number }> = [];
   try {
     const body = await request.json() as Record<string, unknown>;
     const phone = normalizeIndianPhone(clean(body.phone, 24)), firstName = clean(body.firstName, 60), lastName = clean(body.lastName, 60);
@@ -69,7 +70,12 @@ export async function POST(request: Request) {
         FROM product_variants v JOIN products p ON p.id=v.product_id WHERE ${byId ? "v.id=?" : "p.slug=? AND v.size=?"} AND v.active=1 AND p.status='published'`)
         .bind(customer.id, ...(byId ? [Number(item.variantId)] : [clean(item.productSlug, 120), clean(item.size, 16)])).first<Record<string, unknown>>();
       const unique = Boolean(row?.is_unique_find);
-      if (!row || (unique ? (!row.reservation_id || quantity !== 1 || row.unique_find_status === "closed") : Number(row.stock) - Number(row.reserved_stock) < quantity)) return Response.json({ error: unique ? "THE HOLD HAS ENDED. This limited T-shirt is available again for someone else." : "One of your selected sizes just sold out. Refresh your bag and try again." }, { status: 409 });
+      if (!row || (unique ? (quantity !== 1 || row.unique_find_status === "closed") : Number(row.stock) - Number(row.reserved_stock) < quantity)) return Response.json({ error: unique ? "This limited T-shirt is no longer available." : "One of your selected sizes just sold out. Refresh your bag and try again." }, { status: 409 });
+      if (unique && !row.reservation_id) {
+        const secured = await env.DB.prepare("UPDATE product_variants SET reserved_stock=reserved_stock+? WHERE id=? AND active=1 AND stock-reserved_stock>=?").bind(quantity, Number(row.variant_id), quantity).run();
+        if (Number(secured.meta.changes ?? 0) !== 1) return Response.json({ error: "This limited T-shirt was just secured by another customer." }, { status: 409 });
+        checkoutRecoveredHolds.push({ variantId:Number(row.variant_id), quantity });
+      }
       lines.push({ variantId:Number(row.variant_id), slug:String(row.slug), name:String(row.name), size:String(row.size), color:String(row.color), unitPrice:Number(row.variant_price ?? row.price), quantity, editionNumber: row.edition_number == null ? null : Number(row.edition_number), isUniqueFind: unique, reservationId: row.reservation_id == null ? null : Number(row.reservation_id) });
     }
     const subtotal = lines.reduce((sum, line) => sum + line.unitPrice * line.quantity, 0);
@@ -121,6 +127,7 @@ export async function POST(request: Request) {
     return Response.json({ orderId, paymentMethod, subtotalAmount: subtotal, discountAmount: coupon.amount, shippingAmount: shipping, totalAmount: total, walletAmount: walletPaise, payableAmount: total - walletPaise }, { status: 201 });
   } catch (error) {
     if (decremented.length) await env.DB.batch(decremented.map((line) => env.DB.prepare(line.isUniqueFind ? "UPDATE product_variants SET stock=stock+?,reserved_stock=reserved_stock+? WHERE id=?" : "UPDATE product_variants SET stock=stock+? WHERE id=?").bind(...(line.isUniqueFind ? [line.quantity, line.quantity, line.variantId] : [line.quantity, line.variantId]))));
+    if (checkoutRecoveredHolds.length) await env.DB.batch(checkoutRecoveredHolds.map((hold) => env.DB.prepare("UPDATE product_variants SET reserved_stock=greatest(0,reserved_stock-?) WHERE id=?").bind(hold.quantity, hold.variantId)));
     if (walletDebit && orderId) await env.DB.prepare("INSERT INTO wallet_ledger(customer_id,order_id,amount,type,status,note,idempotency_key) VALUES (?,?,?,'failed_order_restore','available',?,?) ON CONFLICT(idempotency_key) DO NOTHING")
       .bind(walletDebit.customerId, orderId, walletDebit.amount, `Wallet restored after failed order #${orderId}`, `order:${orderId}:wallet-return`).run();
     if (orderId) await env.DB.prepare("UPDATE orders SET status='failed' WHERE id=?").bind(orderId).run();
