@@ -14,7 +14,7 @@ export const products: Product[] = [
     "newArrival": true,
     "color": "Ecru / Blue Print",
     "category": "Women",
-    "note": "Women's ecru oversized T-shirt with a bold blue chest print, clean back, ribbed neck and relaxed everyday drape.",
+    "note": "An ecru oversized tee with bold blue lettering across the chest. The plain back keeps the focus on the graphic; wear it loose over jeans for an easy everyday outfit.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -48,7 +48,7 @@ export const products: Product[] = [
     "newArrival": true,
     "color": "White / Burgundy Print",
     "category": "Women",
-    "note": "Women's white oversized T-shirt with a burgundy chest print, clean back, ribbed neck and relaxed everyday drape.",
+    "note": "A white oversized tee with a compact burgundy statement across the chest. A clean back and roomy silhouette make it easy to pair with denim or relaxed trousers.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -82,7 +82,7 @@ export const products: Product[] = [
     "newArrival": true,
     "color": "White / Burgundy Print",
     "category": "Women",
-    "note": "Women's white baby tee with a burgundy serif chest print, clean back, ribbed neck and fitted everyday drape.",
+    "note": "A white fitted baby tee with burgundy lettering across the front and a plain back. Its closer silhouette pairs naturally with high-waisted denim or a skirt. This is a baby-tee fit, rather than the oversized cut.",
     "gallery": [
       {
         "key": "front",
@@ -116,7 +116,7 @@ export const products: Product[] = [
     "newArrival": true,
     "color": "White",
     "category": "Men",
-    "note": "Oversized T-shirt with a premium everyday fit, clean construction and detailed product photography.",
+    "note": "A white oversized tee with a plain front and a stacked black statement print on the back. The design puts the message behind you while keeping the front understated. Pair it with relaxed jeans or cargo trousers.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -150,7 +150,7 @@ export const products: Product[] = [
     "newArrival": true,
     "color": "Black / White Print",
     "category": "Women",
-    "note": "Women's black cropped T-shirt with a minimal white chest print, clean back, ribbed neck and fitted everyday drape.",
+    "note": "A black fitted crop tee with a small white chest print and a clean back. The shorter hem works with high-waisted jeans, trousers or skirts. This style has a cropped silhouette.",
     "gallery": [
       {
         "key": "front",
@@ -184,7 +184,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White / Red Print",
     "category": "Men",
-    "note": "Oversized white T-shirt with a bold red front graphic, clean back, ribbed neck and premium everyday drape.",
+    "note": "A white oversized tee with a compact red front graphic and a plain back. The small-scale lettering adds a sharp accent to the relaxed silhouette. Wear it with dark denim or loose trousers.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -218,7 +218,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White",
     "category": "Men",
-    "note": "Oversized T-shirt with a premium everyday fit, clean construction and detailed product photography.",
+    "note": "A white oversized tee with a clean front and a large burgundy text graphic on the back. The stacked lettering makes the rear view the focal point. Style it with plain trousers to let the print stand out.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -252,7 +252,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White / Burgundy Print",
     "category": "Men",
-    "note": "Oversized white T-shirt with a burgundy serif chest print, clean back, ribbed neck and relaxed drop shoulder.",
+    "note": "A white oversized tee with a burgundy serif statement on the chest and a plain back. The compact typography gives the roomy silhouette a playful detail; pair it with denim or casual shorts.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -286,7 +286,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White / Black Print",
     "category": "Men",
-    "note": "Oversized white T-shirt with a bold black chest print, clean back, ribbed neck and relaxed premium drape.",
+    "note": "A white oversized tee with bold black lettering arranged across the chest. The plain back balances the direct front statement. A straightforward piece for jeans, cargos and off-duty layering.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -320,7 +320,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "Black / Dust Pink Print",
     "category": "Men",
-    "note": "Oversized black T-shirt with a dust-pink back graphic, plain front, ribbed neck and heavy everyday drape.",
+    "note": "A black oversized tee with an understated plain front and a soft pink text graphic on the back. The contrasting lettering makes the rear print the main feature. Wear it with dark denim for a tonal outfit.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "back-lifestyle",
@@ -354,7 +354,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White / Burgundy Print",
     "category": "Women",
-    "note": "Women's white oversized T-shirt with a burgundy serif chest print, clean back, ribbed neck and relaxed everyday drape.",
+    "note": "A white oversized tee with a small burgundy chest statement and a plain back. The restrained print leaves plenty of clean space around the lettering. Wear it loose or tuck it into your favourite jeans.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -388,7 +388,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White / Black Print",
     "category": "Women",
-    "note": "Women's white cropped T-shirt with a bold black chest print, clean back, ribbed neck and relaxed everyday drape.",
+    "note": "A white relaxed crop tee with bold black chest lettering and a plain back. Its boxier, shorter silhouette pairs with high-waisted trousers or shorts. This style is cropped rather than full length.",
     "gallery": [
       {
         "key": "front",
@@ -422,7 +422,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White / Red Print",
     "category": "Men",
-    "note": "Oversized white T-shirt with a bold red serif front graphic, clean back, ribbed neck and premium everyday drape.",
+    "note": "A white oversized tee with large red serif lettering and a smaller black caption on the front. The clean back keeps the attention on the contrasting chest graphic. Pair it with simple denim or trousers.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -456,7 +456,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White / Black Back Print",
     "category": "Women",
-    "note": "Women's white oversized T-shirt with a plain front, handwritten black back print, soft ribbed neck and relaxed everyday drape.",
+    "note": "A white oversized tee with a plain front and handwritten-style black lettering on the back. The music-themed rear graphic adds character without crowding the front. An easy match for jeans and everyday layers.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -490,7 +490,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White / Burgundy Back Print",
     "category": "Men",
-    "note": "Oversized white T-shirt with a clean plain front, burgundy back graphic, ribbed neck and relaxed premium drape.",
+    "note": "A white oversized tee with a plain front and a bold burgundy statement on the back. The larger rear lettering is balanced by a smaller caption. Wear it with loose denim for a relaxed everyday outfit.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -524,7 +524,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "Ecru / Burgundy Print",
     "category": "Men",
-    "note": "Oversized ecru T-shirt with a burgundy serif chest print, clean back, ribbed neck and relaxed premium drape.",
+    "note": "An ecru oversized tee with a small burgundy statement across the chest and a clean back. The warm neutral base and compact typography keep the look understated. Pair it with blue denim or darker trousers.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -558,7 +558,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White",
     "category": "Men",
-    "note": "Oversized T-shirt with a premium everyday fit, clean construction and detailed product photography.",
+    "note": "A white oversized tee with a clean front and an expressive black text graphic on the back. The stacked handwritten-style lettering gives the design its character. Keep the rest of the outfit simple with jeans or cargos.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -592,7 +592,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "Sand / Burgundy Print",
     "category": "Men",
-    "note": "Oversized sand T-shirt with a burgundy serif front print, clean back, ribbed neck and relaxed premium drape.",
+    "note": "A sand-coloured oversized tee with a small burgundy front statement and a plain back. The neutral base makes it easy to repeat with black trousers, denim or shorts; the chest print adds a wry finishing detail.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -626,7 +626,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White / Black Print",
     "category": "Women",
-    "note": "Women's white oversized T-shirt with a black serif chest print, relaxed everyday fit, clean back and soft ribbed neckline.",
+    "note": "A white oversized tee with black serif lettering across the chest and a clean back. The simple two-colour design works with denim, shorts or relaxed trousers. Wear it loose for the intended easy silhouette.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -660,7 +660,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White",
     "category": "Men",
-    "note": "Oversized T-shirt with a premium everyday fit, clean construction and detailed product photography.",
+    "note": "A white oversized tee with a large black handwritten-style statement on the front. The stacked lettering is the focal point, with a plain back to balance it. Pair it with relaxed jeans or casual trousers.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
@@ -694,7 +694,7 @@ export const products: Product[] = [
     "newArrival": false,
     "color": "White",
     "category": "Men",
-    "note": "Oversized white T-shirt with a front statement print, clean back, ribbed neck and relaxed drop shoulder.",
+    "note": "A white oversized tee with a two-line black serif statement on the chest and a plain back. The clean typography gives this everyday piece a direct, understated look. Wear it with denim or loose trousers.\n\n240 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a Lycra-ribbed neckline and double-stitched construction. Full-length, unisex oversized fit.",
     "gallery": [
       {
         "key": "front",
