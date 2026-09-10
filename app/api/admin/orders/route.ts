@@ -9,8 +9,9 @@ const fulfillmentLabels: Record<string, string> = {
   cancelled: "Order cancelled", return_requested: "Return requested", returned: "Return completed", refunded: "Refund completed",
 };
 const nextStatuses: Record<string, string[]> = {
-  pending: ["confirmed", "cancelled"], awaiting_payment: ["confirmed", "cancelled"], confirmed: ["processing", "cancelled"],
-  processing: ["packed", "cancelled"], packed: ["ready_to_ship"], ready_to_ship: ["shipped"], shipped: ["out_for_delivery", "returned"],
+  pending: ["confirmed", "processing", "packed", "ready_to_ship", "shipped", "out_for_delivery", "delivered", "cancelled"],
+  awaiting_payment: ["confirmed", "cancelled"], confirmed: ["processing", "packed", "ready_to_ship", "shipped", "out_for_delivery", "delivered", "cancelled"],
+  processing: ["packed", "ready_to_ship", "shipped", "out_for_delivery", "delivered", "cancelled"], packed: ["ready_to_ship", "shipped", "out_for_delivery", "delivered"], ready_to_ship: ["shipped", "out_for_delivery", "delivered"], shipped: ["out_for_delivery", "delivered", "returned"],
   out_for_delivery: ["delivered", "returned"], delivered: ["return_requested"], return_requested: ["returned", "refunded"], returned: ["refunded"],
 };
 const paymentStatuses = new Set(["pending", "paid", "failed", "cod_due", "refund_pending", "partially_refunded", "refunded"]);
