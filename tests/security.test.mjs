@@ -42,6 +42,19 @@ test("media signatures reject SVG/HTML disguised as product images", () => {
   assert.equal(image.imageMime(Buffer.from("RIFF0000WEBP")), "image/webp");
 });
 
+test("member and admin forms sign in directly without OTP fields", async () => {
+  const [member, admin, login] = await Promise.all([
+    readFile(new URL("../app/phone-auth-form.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/admin/admin-auth-form.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/_lib/phone-login.ts", import.meta.url), "utf8"),
+  ]);
+  for (const source of [member, admin]) {
+    assert.doesNotMatch(source, /needsCode|one-time-code|verification code/i);
+  }
+  assert.doesNotMatch(login, /signInWithOtp|verifyOtp|NEXT_PUBLIC_SUPABASE/);
+  assert.match(login, /signInNameAndPhone/);
+});
+
 async function loadWithDatabase(path, database) {
   const source = (await readFile(new URL(path, import.meta.url), "utf8"))
     .replace('import { env } from "@/db/runtime";', 'const env = { DB: globalThis.__creditTestDB };');

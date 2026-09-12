@@ -2,10 +2,10 @@
 .unique-product-kicker{display:block;margin:-4px 0 14px;font-size:10px;letter-spacing:.13em;color:#75664e}
 
 .unique-banner{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(360px,.94fr);min-height:min(64vw,690px);margin:54px 5vw 112px;background:#f4ecdf;color:#272522;overflow:hidden}
-.unique-banner-reference{position:relative;display:block;min-height:0;aspect-ratio:1774/886;margin:0;background:#f5ede1}
+.unique-banner.unique-banner-reference{position:relative;display:block;width:100%;min-height:0;aspect-ratio:1774/886;margin:0;padding:0;border:0;background:#f5ede1;color:inherit;transform:none;cursor:pointer}
 .unique-banner-reference>img{object-fit:cover;object-position:center}
-.unique-banner-reference>button{position:absolute;z-index:2;inset:0;width:100%;height:100%;border:0;background:transparent;cursor:pointer}
-.unique-banner-reference>button:focus-visible{outline:2px solid #8b6931;outline-offset:5px}
+.unique-banner.unique-banner-reference:hover{background:#f5ede1;color:inherit;transform:none}
+.unique-banner.unique-banner-reference:focus-visible{outline:2px solid #8b6931;outline-offset:5px}
 .unique-banner-copy{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;padding:clamp(42px,6vw,105px)}
 .unique-banner-copy>p,.unique-page-copy>p,.unique-promise span,.archive-empty p{margin:0;font-size:10px;font-weight:650;letter-spacing:.24em}
 .unique-banner h2{margin:clamp(22px,3vw,42px) 0 22px;font-family:Georgia,serif;font-size:clamp(68px,9.9vw,178px);font-weight:400;line-height:.77;letter-spacing:-.09em}

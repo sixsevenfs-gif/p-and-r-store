@@ -120,6 +120,7 @@ test("keeps mobile product and campaign actions reachable", async () => {
   ]);
   assert.match(page, /mobile-gallery-close/);
   assert.match(page, /close=\{\(\) => go\("collection"\)\}/);
+  assert.match(page, /className="unique-banner unique-banner-reference" onClick=\{\(\) => go\("unique"\)\}/);
   assert.match(styles, /grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.match(uniqueStyles, /inset:0;width:100%;height:100%/);
+  assert.match(uniqueStyles, /\.unique-banner\.unique-banner-reference\{[^}]*width:100%/);
 });

@@ -72,12 +72,38 @@ export async function recordPhoneLogin(customerId: number, user: MemberUser) {
   ]);
 }
 
+export async function signInNameAndPhone(name: string, rawPhone: string, userId: string) {
+  const phone = normalizeIndianPhone(rawPhone);
+  const fullName = name.trim().replace(/\s+/g, " ").slice(0, 120);
+  if (!phone || !fullName) return null;
+  const db = getDb();
+  let customer = await db.select().from(customers).where(eq(customers.phone, phone)).get();
+  if (!customer) {
+    const parts = fullName.split(" ");
+    await db.insert(customers).values({
+      email: memberEmailForPhone(phone),
+      firstName: parts[0] || "P&R",
+      lastName: parts.slice(1).join(" ") || "Member",
+      address: "",
+      city: "",
+      pinCode: "",
+      phone,
+      authProvider: "name_phone",
+      referralCode: await uniqueReferralCode(phone),
+    });
+    customer = await db.select().from(customers).where(eq(customers.phone, phone)).get();
+  }
+  if (!customer || customer.status !== "active") return null;
+  await recordPhoneLogin(customer.id, { id: userId, email: "", phone, name: fullName });
+  return customer;
+}
+
 export async function requireApiCustomer(request?: Request) {
   const session = await getAuthSession(request);
   if (!session?.user) return null;
   return getDb().select().from(customers).where(and(
-    eq(customers.id, session.customerId), eq(customers.authUserId, session.user.id),
-    eq(customers.phone, session.user.phone), eq(customers.status, "active"),
+    eq(customers.id, session.customerId), eq(customers.phone, session.user.phone),
+    eq(customers.status, "active"),
   )).get();
 }
 

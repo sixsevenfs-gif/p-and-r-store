@@ -157,11 +157,11 @@ export default function Home() {
         </section>
 
         <section className="editorial-grid">
-          <motion.button onClick={() => goCollection("Women")} className="editorial large" {...fade}><img src="/images/bone-editorial.jpg" alt="Women's oversized collection"/><span><small>02 / WOMEN</small>Quiet form. Strong presence.<ArrowRight/></span></motion.button>
-          <motion.button onClick={() => goCollection("Men")} className="editorial" {...fade}><img src="/images/washed-charcoal.jpg" alt="Men's oversized collection"/><span><small>01 / MEN</small>The daily uniform.<ArrowRight/></span></motion.button>
+          <motion.button onClick={() => goCollection("Women")} className="editorial large" {...fade}><img src="/images/women-editorial.jpg" alt="Woman wearing a white P&R T-shirt"/><span><small>02 / WOMEN</small>Quiet form. Strong presence.<ArrowRight/></span></motion.button>
+          <motion.button onClick={() => goCollection("Men")} className="editorial" {...fade}><img src="/images/men-editorial.jpg" alt="Man wearing a white P&R T-shirt"/><span><small>01 / MEN</small>The daily uniform.<ArrowRight/></span></motion.button>
         </section>
 
-        <section className="unique-banner unique-banner-reference" aria-label="Unique Finds"><Image src="/images/unique-finds-hero.png" alt="P&R Limited Collection — Unique Finds. Only five or fewer will ever exist." fill priority sizes="100vw"/><button onClick={() => go("unique")} aria-label="Discover Unique Finds"/></section>
+        <motion.button type="button" className="unique-banner unique-banner-reference" onClick={() => go("unique")} aria-label="Discover Unique Finds" {...fade}><Image src="/images/unique-finds-hero.png" alt="P&R Limited Collection — Unique Finds. Only five or fewer will ever exist." fill priority sizes="100vw"/></motion.button>
 
         <section className="about" id="about"><motion.div {...fade}><p>P&R / THE STANDARD</p><h2>Less noise.<br/><em>More presence.</em></h2></motion.div><motion.div {...fade}><p>P&R was created around a simple belief: the things you wear most should be the things made best.</p><p>Our first study is the oversized T-shirt—reworked through proportion, weight and restraint. Made for movement. Designed for repetition.</p><div className="facts"><span>Designed in India</span><span>240 GSM cotton</span><span>Unisex proportions</span></div></motion.div></section>
         <section className="drop core"><motion.div className="section-head" {...fade}><div><p>CORE ESSENTIALS</p><h2>The daily rotation.</h2></div><button onClick={() => goCollection("All")}>Shop all <ArrowRight size={14}/></button></motion.div><div className="product-grid core-products">{standardProducts.slice(4,8).map((p,i)=><ProductCard key={p.id} p={p} i={i} open={openProduct} add={add}/>)}</div></section>

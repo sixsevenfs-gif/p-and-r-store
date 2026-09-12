@@ -5,7 +5,7 @@ P&R is a Next.js storefront and operations console backed by Supabase.
 ## Architecture
 
 - Next.js: storefront, account area, checkout APIs, and `/admin`
-- SMS-verified, signed mobile sessions: customer and administrator access
+- Signed name-and-mobile sessions: customer and administrator access
 - Supabase PostgreSQL: catalog, inventory, carts, orders, coupons, payments, referrals, and audit data
 - Supabase Storage: public product images in the `product-images` bucket
 - Render: Node.js web service deployed automatically from GitHub `main`
@@ -40,10 +40,8 @@ WebP, and AVIF. Run these files in Dashboard > SQL Editor, in order:
 2. `supabase/migrations/0002_commerce.sql`
 
 Run `supabase/migrations/0003_phone_members.sql` as well. Customer members use
-their name and Indian mobile number with SMS OTP verification. Email is optional.
-Enable the Supabase phone provider and configure its SMS delivery provider for
-both customer and admin login. Set a dedicated random `MEMBER_SESSION_SECRET`
-of at least 32 characters; existing legacy sessions must sign in again.
+their name and Indian mobile number. Email is optional and no OTP is required.
+Set a dedicated random `MEMBER_SESSION_SECRET` of at least 32 characters.
 
 Run `supabase/migrations/0004_product_editions_unique_finds.sql` before using
 numbered editions or Unique Finds. It adds the edition fields, the permanent
