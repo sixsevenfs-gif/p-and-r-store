@@ -5,14 +5,14 @@ P&R is a Next.js storefront and operations console backed by Supabase.
 ## Architecture
 
 - Next.js: storefront, account area, checkout APIs, and `/admin`
-- Signed name-and-mobile sessions: customer and administrator access
+- SMS-verified, signed mobile sessions: customer and administrator access
 - Supabase PostgreSQL: catalog, inventory, carts, orders, coupons, payments, referrals, and audit data
 - Supabase Storage: public product images in the `product-images` bucket
 - Render: Node.js web service deployed automatically from GitHub `main`
 
 ## Local development
 
-Copy `.env.example` to `.env.local`, configure the three Supabase values, then run:
+Copy `.env.example` to `.env.local`, configure the Supabase values and MEMBER_SESSION_SECRET, then run:
 
 ```bash
 npm install
@@ -25,6 +25,7 @@ Required configuration:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 DATABASE_URL=
+MEMBER_SESSION_SECRET=
 ```
 
 Use the Supabase transaction-pooler URI for `DATABASE_URL`. It is a server-only
@@ -39,11 +40,25 @@ WebP, and AVIF. Run these files in Dashboard > SQL Editor, in order:
 2. `supabase/migrations/0002_commerce.sql`
 
 Run `supabase/migrations/0003_phone_members.sql` as well. Customer members use
-their name and Indian mobile number; no email, password, or OTP is required.
+their name and Indian mobile number with SMS OTP verification. Email is optional.
+Enable the Supabase phone provider and configure its SMS delivery provider for
+both customer and admin login. Set a dedicated random `MEMBER_SESSION_SECRET`
+of at least 32 characters; existing legacy sessions must sign in again.
 
 Run `supabase/migrations/0004_product_editions_unique_finds.sql` before using
 numbered editions or Unique Finds. It adds the edition fields, the permanent
 1–5 piece limit, order snapshots, and expiring server-side reservations.
+
+Apply the remaining migrations in filename order through `0011` before running
+this version. In particular, `0009_auth_rate_limits.sql` provides shared login
+attempt counters, `0010_payment_creation_attempts.sql` records gateway creation
+attempts, and `0011_checkout_fingerprint.sql` binds retries to the original
+checkout contents. Run migrations with the server database role or grant it
+the required table access.
+
+An uncertain Razorpay order-creation request is blocked from automatic retries.
+Support must reconcile the gateway receipt `pr_<internal order id>` against the
+payment and creation-attempt records before allowing another payment attempt.
 
 Admin access is separate. Add the store owner's number to
 `ADMIN_PHONE_NUMBERS` in both `.env.local` and Render, for example:

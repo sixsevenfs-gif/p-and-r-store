@@ -1,4 +1,6 @@
+import { atomicRequest } from "@/app/api/_lib/atomic";
 import { env } from "@/db/runtime";
+import { returnOrderCredit } from "@/app/api/_lib/order-credit";
 import { requireAdmin } from "../../_lib/admin";
 
 type Row = Record<string, unknown>;
@@ -65,7 +67,7 @@ export async function GET(request: Request) {
   return Response.json({ data: rows.results, page, limit, total: Number(count?.count || 0) });
 }
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   const admin = await requireAdmin(request);
   if (!admin) return Response.json({ error: "Admin access required" }, { status: 403 });
   const body = await request.json() as Record<string, unknown>;
@@ -85,6 +87,9 @@ export async function PATCH(request: Request) {
 
   if (action === "status") {
     const next = clean(body.status, 40).toLowerCase(), current = clean(order.status, 40).toLowerCase();
+    if (next === current) return Response.json({ updated: true, order: await detailFor(orderId, request) });
+    if (order.payment_method === "razorpay" && order.payment_status !== "paid" && !["cancelled", "refunded"].includes(next)) return Response.json({ error: "Online payment must be captured before fulfilment." }, { status: 409 });
+    if (next === "refunded" && order.payment_status !== "paid" && !order.paid_at) return Response.json({ error: "Unpaid orders cannot receive a full refund." }, { status: 409 });
     if (!nextStatuses[current]?.includes(next)) return Response.json({ error: `Cannot move an order from ${current || "its current status"} to ${next || "that status"}.` }, { status: 409 });
     const courier = clean(body.courier || order.courier, 100), trackingId = clean(body.trackingId || order.tracking_id, 120);
     if (next === "shipped" && courier.toLowerCase() !== "local delivery" && courier.toLowerCase() !== "local" && !trackingId) return Response.json({ error: "A courier and tracking/AWB number are required before shipping." }, { status: 400 });
@@ -100,11 +105,7 @@ export async function PATCH(request: Request) {
     if (next === "refunded") updates.push("refunded_at=unixepoch()", "refund_status='refunded'", "payment_status='refunded'");
     writes.push(env.DB.prepare(`UPDATE orders SET ${updates.join(",")} WHERE id=?`).bind(...values, orderId));
     if (next === "refunded") {
-      const refundAmount = Math.max(0, Number(order.total_amount || 0));
-      if (!refundAmount) return Response.json({ error: "This order has no refundable amount." }, { status: 409 });
-      writes.push(env.DB.prepare(`INSERT INTO wallet_ledger(customer_id,order_id,amount,type,status,note,idempotency_key)
-        VALUES(?,?,?,'return_refund','available',?,?) ON CONFLICT(idempotency_key) DO NOTHING`)
-        .bind(order.customer_id, orderId, refundAmount, `Return refund for order #${orderId}`, `return-refund:${orderId}`));
+      const refundAmount = await returnOrderCredit(orderId);
       appendEvent("refund", "Refund added to P&R Wallet", `₹${(refundAmount / 100).toFixed(2)} is available in your P&R Wallet for a future purchase.`, note);
       writes.push(env.DB.prepare("UPDATE payments SET status='refunded',updated_at=unixepoch() WHERE order_id=? AND status NOT IN ('failed','refunded')").bind(orderId));
     }
@@ -118,11 +119,14 @@ export async function PATCH(request: Request) {
       }
       writes.push(env.DB.prepare("UPDATE orders SET inventory_restored_at=unixepoch() WHERE id=? AND inventory_restored_at IS NULL").bind(orderId));
     }
+    if (next === "cancelled") await returnOrderCredit(orderId);
     await env.DB.batch(writes); if (next === "cancelled") await env.DB.prepare(`UPDATE products SET unique_find_status='available' WHERE is_unique_find=1 AND id IN (SELECT v.product_id FROM product_variants v JOIN order_items i ON i.variant_id=v.id WHERE i.order_id=? AND i.is_unique_find=1) AND EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id=products.id AND v.active=1 AND v.stock-v.reserved_stock>0)`).bind(orderId).run(); await audit(admin.email, "order_status", orderId, { from: current, to: next, stockRestored: next === "cancelled" && !order.inventory_restored_at });
   } else if (action === "payment") {
     const status = clean(body.paymentStatus, 40).toLowerCase();
+    if (order.payment_method !== "cod" || !["pending", "cod_due", "paid"].includes(status) || ["cancelled", "refunded"].includes(String(order.status))) return Response.json({ error: "Only COD collection can be recorded manually. Online payments require gateway verification." }, { status: 409 });
+    if (order.payment_status === "paid" && status !== "paid") return Response.json({ error: "A collected payment cannot be reversed manually." }, { status: 409 });
     if (!paymentStatuses.has(status)) return Response.json({ error: "Invalid payment status." }, { status: 400 });
-    writes.push(env.DB.prepare("UPDATE orders SET payment_status=?,refund_status=? WHERE id=?").bind(status, status.includes("refund") ? status : order.refund_status || "none", orderId));
+    writes.push(env.DB.prepare("UPDATE orders SET paid_at=CASE WHEN ?='paid' THEN coalesce(paid_at,unixepoch()) ELSE paid_at END,payment_status=?,refund_status=? WHERE id=?").bind(status, status, status.includes("refund") ? status : order.refund_status || "none", orderId));
     writes.push(env.DB.prepare("UPDATE payments SET status=?,updated_at=unixepoch() WHERE id=(SELECT id FROM payments WHERE order_id=? ORDER BY id DESC LIMIT 1)").bind(status, orderId));
     appendEvent("payment", status === "paid" ? "Payment received" : titleFor(status), customerMessage, note);
     await env.DB.batch(writes); await audit(admin.email, "order_payment_status", orderId, { status });
@@ -143,3 +147,5 @@ export async function PATCH(request: Request) {
 }
 
 function titleFor(value: string) { return value.replaceAll("_", " ").replace(/\b\w/g, (letter) => letter.toUpperCase()); }
+
+export const PATCH = atomicRequest(handlePATCH);

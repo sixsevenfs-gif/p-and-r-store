@@ -16,6 +16,7 @@ export type CatalogFilters = {
 /** Seed only when a local/development D1 database is empty. Production data is
  * managed through the admin API and therefore never overwritten by this code. */
 export async function ensureCatalog() {
+  if (process.env.NODE_ENV === "production" || process.env.ALLOW_DEVELOPMENT_SEED !== "true") return;
   const count = await env.DB.prepare("SELECT count(*) AS count FROM products").first<{ count: number }>();
   if (Number(count?.count)) return;
 

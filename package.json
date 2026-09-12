@@ -11,7 +11,7 @@
     "prebuild": "node scripts/generate-product-manifest.mjs",
     "build": "next build",
     "start": "next start -p ${PORT:-3000}",
-    "test": "node --test tests/rendered-html.test.mjs",
+    "test": "node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "tsc --noEmit"
   },

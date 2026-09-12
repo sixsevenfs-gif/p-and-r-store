@@ -1,8 +1,16 @@
 import postgres, { type Row } from "postgres";
+import { AsyncLocalStorage } from "node:async_hooks";
 
 type BoundValue = unknown;
 
 let client: ReturnType<typeof postgres> | undefined;
+const transactions = new AsyncLocalStorage<ReturnType<typeof postgres>>();
+
+function safeInteger(value: string) {
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed)) throw new Error("Database integer exceeds safe application precision");
+  return parsed;
+}
 
 function getClient() {
   const connectionString = process.env.DATABASE_URL;
@@ -14,6 +22,11 @@ function getClient() {
     connect_timeout: 15,
     prepare: false,
     ssl: "require",
+    types: {
+      // PostgreSQL int8 is returned as text by default. Decode by OID, never by
+      // string content: phone numbers, SKUs and postcodes must remain strings.
+      applicationInteger: { to: 20, from: [20], serialize: String, parse: safeInteger },
+    },
   });
   return client;
 }
@@ -72,7 +85,6 @@ const identityTables = new Set([
   "shipping_rules",
   "coupons",
   "coupon_usages",
-  "admin_roles",
   "order_status_history",
   "order_timeline",
   "unique_find_reservations",
@@ -108,7 +120,7 @@ function normalizeRows(rows: Row[]) {
     Object.fromEntries(
       Object.entries(row).map(([key, value]) => [
         key,
-        typeof value === "bigint" ? Number(value) : value,
+        typeof value === "bigint" ? safeInteger(String(value)) : value,
       ]),
     ),
   );
@@ -125,7 +137,7 @@ export class PostgresStatement {
     return this;
   }
   private async execute() {
-    const sql = this.scopedClient ?? getClient();
+    const sql = this.scopedClient ?? transactions.getStore() ?? getClient();
     const rows = await sql.unsafe(
       translate(this.statement),
       this.values as never[],
@@ -156,27 +168,21 @@ export class PostgresStatement {
 }
 
 class PostgresD1Database {
+  async transaction<T>(work: () => Promise<T>): Promise<T> {
+    if (transactions.getStore()) return work();
+    return getClient().begin(async (transaction) => transactions.run(
+      transaction as unknown as ReturnType<typeof postgres>, work,
+    )) as Promise<T>;
+  }
   prepare(statement: string) {
     return new PostgresStatement(statement);
   }
   async batch(statements: PostgresStatement[]) {
-    const sql = getClient();
-    return sql.begin(async (transaction) =>
-      Promise.all(
-        statements.map(async (statement) => {
-          // D1 statements retain their SQL and bound values; execute them through
-          // the transaction-scoped postgres client.
-          const copy = Object.assign(
-            Object.create(Object.getPrototypeOf(statement)),
-            statement,
-          ) as PostgresStatement;
-          copy.scopedClient = transaction as unknown as ReturnType<
-            typeof postgres
-          >;
-          return copy.run();
-        }),
-      ),
-    );
+    return this.transaction(async () => {
+      const results = [];
+      for (const statement of statements) results.push(await statement.run());
+      return results;
+    });
   }
 }
 

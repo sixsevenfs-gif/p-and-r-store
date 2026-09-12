@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 const nextConfig: NextConfig = {
+  turbopack: { root: process.cwd() },
   images: {
     // Render's free web service can be overwhelmed when Next optimizes dozens
     // of product images concurrently. The source JPEGs are already web-sized,

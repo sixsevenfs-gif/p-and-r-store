@@ -1,3 +1,4 @@
+import { atomicRequest } from "@/app/api/_lib/atomic";
 import { env } from "@/db/runtime";
 import { requireApiCustomer } from "../_lib/account";
 import { ensureCatalog } from "../_lib/catalog";
@@ -8,7 +9,7 @@ async function cartFor(customerId: number) {
   return env.DB.prepare("SELECT id FROM carts WHERE customer_id=?").bind(customerId).first<{ id:number }>();
 }
 
-export async function GET() {
+async function handleGET() {
   const customer = await requireApiCustomer();
   if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
   await releaseExpiredUniqueReservations();
@@ -22,10 +23,10 @@ export async function GET() {
   return Response.json({ items: items.results });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const customer = await requireApiCustomer();
   if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
-  const body = await request.json() as { variantId?: number; quantity?: number };
+  const body = await request.json() as { variantId?: number; quantity?: number; merge?: boolean };
   const variantId = Number(body.variantId), quantity = Number(body.quantity ?? 1);
   if (!Number.isInteger(variantId) || !Number.isInteger(quantity) || quantity < 1 || quantity > 10) return Response.json({ error: "Invalid bag item." }, { status: 400 });
   await ensureCatalog();
@@ -33,21 +34,47 @@ export async function POST(request: Request) {
   if (variant?.is_unique_find) return Response.json({ error: "Secure this T-shirt from Unique Finds." }, { status: 409 });
   if (!variant || variant.stock - variant.reserved_stock < quantity) return Response.json({ error: "This size is out of stock." }, { status: 409 });
   const cart = await cartFor(customer.id);
+  const current = await env.DB.prepare("SELECT quantity FROM cart_items WHERE cart_id=? AND variant_id=?").bind(cart!.id, variantId).first<{quantity:number}>();
+  const combined = body.merge === true ? Math.max(Number(current?.quantity || 0), quantity) : Number(current?.quantity || 0) + quantity;
+  if (combined > 10 || combined > variant.stock - variant.reserved_stock) return Response.json({ error: "The requested bag quantity is unavailable." }, { status: 409 });
   await env.DB.batch([
     env.DB.prepare(`INSERT INTO cart_items(cart_id,variant_id,quantity) VALUES (?,?,?)
-      ON CONFLICT(cart_id,variant_id) DO UPDATE SET quantity=min(10,cart_items.quantity+excluded.quantity)`).bind(cart!.id, variantId, quantity),
+      ON CONFLICT(cart_id,variant_id) DO UPDATE SET quantity=excluded.quantity`).bind(cart!.id, variantId, combined),
     env.DB.prepare("UPDATE carts SET updated_at=unixepoch() WHERE id=?").bind(cart!.id),
   ]);
   return Response.json({ added: true }, { status: 201 });
 }
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   const customer = await requireApiCustomer();
   if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
-  const body = await request.json() as { variantId?: number; quantity?: number };
+  const body = await request.json() as { variantId?: number; quantity?: number; nextVariantId?: number };
   const variantId = Number(body.variantId), quantity = Number(body.quantity);
   if (!Number.isInteger(variantId) || !Number.isInteger(quantity) || quantity < 0 || quantity > 10) return Response.json({ error: "Invalid quantity." }, { status: 400 });
   const cart = await cartFor(customer.id);
+  if (body.nextVariantId !== undefined) {
+    const nextVariantId = Number(body.nextVariantId);
+    if (!Number.isSafeInteger(nextVariantId) || nextVariantId < 1) return Response.json({ error: "Invalid size." }, { status: 400 });
+    if (nextVariantId === variantId) return Response.json({ updated: true });
+    const current = await env.DB.prepare(`SELECT ci.quantity,v.product_id,p.is_unique_find FROM cart_items ci
+      JOIN product_variants v ON v.id=ci.variant_id JOIN products p ON p.id=v.product_id
+      WHERE ci.cart_id=? AND ci.variant_id=?`).bind(cart!.id, variantId).first<{ quantity:number; product_id:number; is_unique_find:number }>();
+    if (!current) return Response.json({ error: "Bag item not found." }, { status: 404 });
+    if (current.is_unique_find) return Response.json({ error: "A secured Unique Find cannot change size." }, { status: 409 });
+    const target = await env.DB.prepare(`SELECT v.stock-v.reserved_stock available FROM product_variants v
+      JOIN products p ON p.id=v.product_id WHERE v.id=? AND v.product_id=? AND v.active=1 AND p.status='published'`)
+      .bind(nextVariantId, current.product_id).first<{ available:number }>();
+    const existing = await env.DB.prepare("SELECT quantity FROM cart_items WHERE cart_id=? AND variant_id=?").bind(cart!.id, nextVariantId).first<{ quantity:number }>();
+    const combined = current.quantity + Number(existing?.quantity || 0);
+    if (!target || combined > 10 || combined > target.available) return Response.json({ error: "The requested size is unavailable." }, { status: 409 });
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM cart_items WHERE cart_id=? AND variant_id=?").bind(cart!.id, variantId),
+      env.DB.prepare(`INSERT INTO cart_items(cart_id,variant_id,quantity) VALUES (?,?,?)
+        ON CONFLICT(cart_id,variant_id) DO UPDATE SET quantity=excluded.quantity`).bind(cart!.id, nextVariantId, combined),
+      env.DB.prepare("UPDATE carts SET updated_at=unixepoch() WHERE id=?").bind(cart!.id),
+    ]);
+    return Response.json({ updated: true });
+  }
   if (quantity === 0) {
     const reservation = await env.DB.prepare("SELECT id,quantity FROM unique_find_reservations WHERE cart_id=? AND variant_id=? AND status='active'").bind(cart!.id, variantId).first<{ id:number; quantity:number }>();
     await env.DB.batch([env.DB.prepare("DELETE FROM cart_items WHERE cart_id=? AND variant_id=?").bind(cart!.id, variantId), ...(reservation ? [env.DB.prepare("UPDATE unique_find_reservations SET status='released',updated_at=unixepoch() WHERE id=?").bind(reservation.id), env.DB.prepare("UPDATE product_variants SET reserved_stock=greatest(0,reserved_stock-?) WHERE id=?").bind(reservation.quantity, variantId)] : [])]);
@@ -61,7 +88,7 @@ export async function PATCH(request: Request) {
   return Response.json({ updated: true });
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   const customer = await requireApiCustomer();
   if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
   const variantId = Number(new URL(request.url).searchParams.get("variantId"));
@@ -71,3 +98,11 @@ export async function DELETE(request: Request) {
   await env.DB.batch([env.DB.prepare("DELETE FROM cart_items WHERE cart_id=? AND variant_id=?").bind(cart!.id, variantId), ...(reservation ? [env.DB.prepare("UPDATE unique_find_reservations SET status='released',updated_at=unixepoch() WHERE id=?").bind(reservation.id), env.DB.prepare("UPDATE product_variants SET reserved_stock=greatest(0,reserved_stock-?) WHERE id=?").bind(reservation.quantity, variantId)] : [])]);
   return Response.json({ deleted: true });
 }
+
+export const POST = atomicRequest(handlePOST);
+
+export const PATCH = atomicRequest(handlePATCH);
+
+export const DELETE = atomicRequest(handleDELETE);
+
+export const GET = atomicRequest(handleGET);

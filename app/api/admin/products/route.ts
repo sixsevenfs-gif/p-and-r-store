@@ -1,3 +1,4 @@
+import { atomicRequest } from "@/app/api/_lib/atomic";
 import { env } from "@/db/runtime";
 import { requireAdmin } from "../../_lib/admin";
 
@@ -323,7 +324,7 @@ async function ensurePublishable(id: number) {
     );
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const admin = await requireAdmin(request);
   if (!admin)
     return Response.json({ error: "Admin access required." }, { status: 403 });
@@ -696,7 +697,7 @@ export async function GET(request: Request) {
   });
 }
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   const admin = await requireAdmin(request);
   if (!admin)
     return Response.json({ error: "Admin access required." }, { status: 403 });
@@ -811,3 +812,7 @@ export async function PATCH(request: Request) {
     );
   }
 }
+
+export const POST = atomicRequest(handlePOST);
+
+export const PATCH = atomicRequest(handlePATCH);

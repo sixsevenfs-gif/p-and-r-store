@@ -51,6 +51,7 @@ export async function ensureCustomerForUser(user: MemberUser) {
     });
     customer = await db.select().from(customers).where(eq(customers.authUserId, user.id)).get();
   } else if (customer.authUserId !== user.id) {
+    if (customer.authUserId) throw new Error("This account is already linked to another verified identity");
     await db.update(customers).set({
       authUserId: user.id,
       authProvider: phone ? "phone_otp" : "supabase_email",
@@ -71,34 +72,13 @@ export async function recordPhoneLogin(customerId: number, user: MemberUser) {
   ]);
 }
 
-export async function signInNameAndPhone(name: string, rawPhone: string) {
-  const phone = normalizeIndianPhone(rawPhone);
-  const fullName = name.trim().replace(/\s+/g, " ").slice(0, 120);
-  if (!phone || !fullName) return null;
-  const db = getDb();
-  let customer = await db.select().from(customers).where(eq(customers.phone, phone)).get();
-  if (!customer) {
-    const parts = fullName.split(" ");
-    await db.insert(customers).values({
-      email: memberEmailForPhone(phone), firstName: parts[0] || "P&R", lastName: parts.slice(1).join(" ") || "Member",
-      address: "", city: "", pinCode: "", phone, authProvider: "name_phone", referralCode: await uniqueReferralCode(phone),
-    });
-    customer = await db.select().from(customers).where(eq(customers.phone, phone)).get();
-  }
-  if (!customer) return null;
-  await env.DB.batch([
-    env.DB.prepare("UPDATE customers SET last_login_at=unixepoch(),updated_at=unixepoch() WHERE id=?").bind(customer.id),
-    env.DB.prepare("INSERT INTO customer_login_events(customer_id,auth_user_id,phone) VALUES (?,?,?)").bind(customer.id, `member:${customer.id}`, phone),
-  ]);
-  return customer;
-}
-
 export async function requireApiCustomer(request?: Request) {
   const session = await getAuthSession(request);
   if (!session?.user) return null;
-  const localId = /^member:(\d+)$/.exec(session.user.id);
-  if (localId) return getDb().select().from(customers).where(eq(customers.id, Number(localId[1]))).get();
-  return ensureCustomerForUser(session.user);
+  return getDb().select().from(customers).where(and(
+    eq(customers.id, session.customerId), eq(customers.authUserId, session.user.id),
+    eq(customers.phone, session.user.phone), eq(customers.status, "active"),
+  )).get();
 }
 
 export async function attachReferral(customerId: number, code: string | null | undefined) {

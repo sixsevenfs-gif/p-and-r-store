@@ -27,6 +27,8 @@ export default function Home() {
   const [view, setView] = useState<View>("home");
   const [selected, setSelected] = useState(seedProducts[0]);
   const [cart, setCart] = useState<Product[]>([]);
+  const cartHydrated = useRef(false);
+  const cartQueue = useRef(Promise.resolve());
   const [cartNotice, setCartNotice] = useState<Product | null>(null);
   const [reservationNotice, setReservationNotice] = useState<{ product: Product; state: "securing" | "reserved" | "closed" | "error"; message: string } | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -47,7 +49,7 @@ export default function Home() {
   useEffect(()=>{fetch("/api/content",{cache:"no-store"}).then(r=>r.ok?r.json():Promise.reject()).then(({sections})=>setCmsSections(sections as ContentSection[])).catch(()=>{})},[]);
   useEffect(() => { const onScroll = () => setNavSolid(window.scrollY > 60 || view !== "home"); onScroll(); addEventListener("scroll", onScroll); return () => removeEventListener("scroll", onScroll); }, [view]);
   useEffect(() => { queueMicrotask(() => setView(viewFromPath(location.pathname))); const onPop = () => setView(viewFromPath(location.pathname)); addEventListener("popstate", onPop); return () => removeEventListener("popstate", onPop); }, []);
-  useEffect(() => { const saved = localStorage.getItem("pr-bag"); if (saved) { try { const entries = JSON.parse(saved) as Array<string | {slug:string;selectedSize?:string;variantId?:number}>; queueMicrotask(() => setCart(entries.flatMap(entry => { const savedItem=typeof entry === "string" ? {slug:entry} : entry; const product=products.find(item=>item.slug===savedItem.slug); return product ? [{...product,selectedSize:savedItem.selectedSize||"M",variantId:savedItem.variantId||product.variantId}] : []; }))); } catch {} } }, [products]);
+  useEffect(() => { const saved = localStorage.getItem("pr-bag"); if (saved) { try { const entries = JSON.parse(saved) as Array<string | {slug:string;selectedSize?:string;variantId?:number}>; queueMicrotask(() => { cartHydrated.current = true; setCart(entries.flatMap(entry => { const savedItem=typeof entry === "string" ? {slug:entry} : entry; const product=products.find(item=>item.slug===savedItem.slug); return product ? [{...product,selectedSize:savedItem.selectedSize||"M",variantId:savedItem.variantId||product.variantId}] : []; })); }); } catch { cartHydrated.current = true; } } else { cartHydrated.current = true; } }, [products]);
   useEffect(() => { const code = new URLSearchParams(location.search).get("ref"); if (code) localStorage.setItem("pr-referral", code); }, []);
   const refreshWallet = async () => {
     try {
@@ -56,7 +58,7 @@ export default function Home() {
     } catch { setHeaderWallet(null); }
   };
   useEffect(() => { queueMicrotask(() => void refreshWallet()); }, []);
-  useEffect(() => { localStorage.setItem("pr-bag", JSON.stringify(cart.map(({slug,selectedSize,variantId}) => ({slug,selectedSize:selectedSize||"M",variantId})))); }, [cart]);
+  useEffect(() => { if (!cartHydrated.current) return; localStorage.setItem("pr-bag", JSON.stringify(cart.map(({slug,selectedSize,variantId}) => ({slug,selectedSize:selectedSize||"M",variantId})))); }, [cart]);
   useEffect(() => {
     if (!cartNotice) return;
     const timeout = window.setTimeout(() => setCartNotice(null), 3400);
@@ -69,6 +71,17 @@ export default function Home() {
   const goWallet = () => goAccount("wallet");
   const goWishlist = () => { setView("wishlist"); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:"wishlist"}, "", "/wishlist"); requestAnimationFrame(() => scrollTo({top:0,behavior:"smooth"})); };
   const openProduct = (p: Product) => { setSelected(p); go("product"); };
+  const hydrateServerCart = async () => {
+    const response = await fetch("/api/cart", { cache: "no-store", signal: AbortSignal.timeout(20000) });
+    if (response.status === 401) return;
+    if (!response.ok) throw new Error("Unable to load your saved bag.");
+    const body = await response.json();
+    const restored = (body.items || []).flatMap((item: Record<string, unknown>) => {
+      const product = products.find(p => p.slug === item.slug);
+      return product ? Array.from({length: Math.min(10, Number(item.quantity))}, () => ({...product, variantId:Number(item.variant_id), selectedSize:String(item.size), price:Number(item.unit_price)/100})) : [];
+    });
+    cartHydrated.current = true; setCart(restored);
+  };
   const cartKey = (product: Product) => `${product.variantId || product.slug}:${product.selectedSize || "M"}`;
   const add = async (p = selected) => {
     if (p.isUniqueFind) {
@@ -77,20 +90,44 @@ export default function Home() {
       try { const response=await fetch("/api/unique-finds/reserve",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({variantId:p.variantId,idempotencyKey:crypto.randomUUID()})}); const result=await response.json() as {error?:string}; if(response.status===401){location.href=`/login?next=${encodeURIComponent("/unique-finds")}`;return;} if(!response.ok){setReservationNotice({product:p,state:result.error==="SOLD OUT"?"closed":"error",message:result.error||"UNIQUE FINDS COULD NOT RESPOND"});return;} setCart(current=>[...current,p]);setReservationNotice({product:p,state:"reserved",message:"RESERVED FOR CHECKOUT"}); } catch { setReservationNotice({product:p,state:"error",message:"UNIQUE FINDS COULD NOT RESPOND"}); }
       return;
     }
-    if (p.variantId) void fetch("/api/cart", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({variantId:p.variantId,quantity:1}) });
-    setCart((current) => [...current, p]);
-    setCartNotice(p);
+    if (!p.variantId) { alert("Product availability is still loading. Please retry."); return; }
+    cartQueue.current = cartQueue.current.then(async () => {
+      try {
+        const response = await fetch("/api/cart", { method:"POST", headers:{"Content-Type":"application/json"}, signal: AbortSignal.timeout(20000), body:JSON.stringify({variantId:p.variantId,quantity:1}) });
+        if (response.status !== 401 && !response.ok) throw new Error((await response.json()).error || "Unable to update your bag.");
+        setCart(current => [...current, p]); setCartNotice(p);
+        if (response.ok) await hydrateServerCart();
+      } catch (error) { alert(error instanceof Error ? error.message : "Unable to update your bag."); }
+    });
   };
-  const setCartQuantity = (product: Product, quantity: number) => setCart((current) => {
-    const safeQuantity = Math.max(0, quantity);
-    const withoutProduct = current.filter((item) => cartKey(item) !== cartKey(product));
-    return [...withoutProduct, ...Array.from({ length: safeQuantity }, () => product)];
-  });
-  const setCartSize = (product: Product, selectedSize: string) => setCart((current) => {
+  const setCartQuantity = (product: Product, quantity: number) => {
+    cartQueue.current = cartQueue.current.then(async () => {
+      try {
+        const response = await fetch("/api/cart", {method:"PATCH",headers:{"content-type":"application/json"},signal:AbortSignal.timeout(20000),body:JSON.stringify({variantId:product.variantId,quantity})});
+        if (response.status === 401) {
+          setCart(current => [...current.filter(item => cartKey(item) !== cartKey(product)), ...Array.from({length:Math.max(0,Math.min(10,quantity))}, () => product)]);
+        } else {
+          if (!response.ok) throw new Error((await response.json()).error || "Unable to update your bag.");
+          await hydrateServerCart();
+        }
+      } catch (error) { alert(error instanceof Error ? error.message : "Unable to update your bag."); }
+    });
+  };
+  const setCartSize = (product: Product, selectedSize: string) => {
     const nextVariant = product.variants?.find((variant) => variant.size === selectedSize);
-    if (!nextVariant) return current;
-    return current.map((item) => cartKey(item) === cartKey(product) ? {...item,selectedSize,variantId:nextVariant.id} : item);
-  });
+    if (!nextVariant || nextVariant.id === product.variantId) return;
+    cartQueue.current = cartQueue.current.then(async () => {
+      try {
+        const response = await fetch("/api/cart", { method: "PATCH", headers: { "content-type": "application/json" }, signal: AbortSignal.timeout(20000), body: JSON.stringify({ variantId: product.variantId, nextVariantId: nextVariant.id, quantity: 1 }) });
+        if (response.status === 401) {
+          setCart(current => current.map(item => cartKey(item) === cartKey(product) ? { ...item, selectedSize, variantId: nextVariant.id } : item));
+        } else {
+          if (!response.ok) throw new Error((await response.json()).error || "Unable to change size.");
+          await hydrateServerCart();
+        }
+      } catch (error) { alert(error instanceof Error ? error.message : "Unable to change size."); }
+    });
+  };
   const collectionProducts = collectionFilter === "All" ? standardProducts : collectionFilter === "New" ? standardProducts.filter((product) => product.newArrival) : standardProducts.filter((product) => product.category === collectionFilter);
 
   return <main>

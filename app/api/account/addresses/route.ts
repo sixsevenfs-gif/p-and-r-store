@@ -1,3 +1,4 @@
+import { atomicRequest } from "@/app/api/_lib/atomic";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { addresses } from "../../../../db/schema";
@@ -5,7 +6,7 @@ import { requireApiCustomer } from "../../_lib/account";
 
 const pinPattern = /^\d{6}$/;
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   try {
     const customer = await requireApiCustomer();
     if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   const customer = await requireApiCustomer();
   if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
   const id = Number(new URL(request.url).searchParams.get("id"));
@@ -44,3 +45,7 @@ export async function DELETE(request: Request) {
   await getDb().delete(addresses).where(and(eq(addresses.id, id), eq(addresses.customerId, customer.id)));
   return Response.json({ deleted: true });
 }
+
+export const POST = atomicRequest(handlePOST);
+
+export const DELETE = atomicRequest(handleDELETE);

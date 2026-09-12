@@ -1,4 +1,6 @@
+import { atomicRequest } from "@/app/api/_lib/atomic";
 import { env } from "@/db/runtime";
+import { returnOrderCredit } from "@/app/api/_lib/order-credit";
 import { requireApiCustomer } from "../../../_lib/account";
 
 type Row = Record<string, unknown>;
@@ -26,7 +28,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 
 /** Customers may cancel only before fulfilment reaches Packed. Inventory is
  * claimed for restoration atomically, so repeat requests cannot add it twice. */
-export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
+async function handlePATCH(request: Request, context: { params: Promise<{ id: string }> }) {
   const customer = await requireApiCustomer(request);
   if (!customer) return Response.json({ error: "Sign in required." }, { status: 401 });
   const id = Number((await context.params).id);
@@ -50,5 +52,8 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
   await env.DB.prepare(`UPDATE products SET unique_find_status='available' WHERE is_unique_find=1 AND id IN (
     SELECT v.product_id FROM product_variants v JOIN order_items i ON i.variant_id=v.id WHERE i.order_id=? AND i.is_unique_find=1
   ) AND EXISTS (SELECT 1 FROM product_variants v WHERE v.product_id=products.id AND v.active=1 AND v.stock-v.reserved_stock>0)`).bind(id).run();
+  await returnOrderCredit(id);
   return Response.json({ cancelled: true });
 }
+
+export const PATCH = atomicRequest(handlePATCH);

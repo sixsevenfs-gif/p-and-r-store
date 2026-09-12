@@ -1,3 +1,4 @@
+import { atomicRequest } from "@/app/api/_lib/atomic";
 import { env } from "@/db/runtime";
 import { requireApiCustomer } from "../../_lib/account";
 import { releaseExpiredUniqueReservations, UNIQUE_RESERVATION_SECONDS, uniqueAvailabilityError, uniqueProductForVariant } from "../../_lib/unique-finds";
@@ -7,7 +8,7 @@ async function cartFor(customerId: number) {
   return env.DB.prepare("SELECT id FROM carts WHERE customer_id=?").bind(customerId).first<{ id: number }>();
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const customer = await requireApiCustomer(request);
   if (!customer) return Response.json({ error: "Sign in required to secure this T-shirt." }, { status: 401 });
   const body = await request.json() as { variantId?: unknown; idempotencyKey?: unknown };
@@ -45,3 +46,5 @@ export async function POST(request: Request) {
   }
   return Response.json({ reserved: true, expiresAt }, { status: 201 });
 }
+
+export const POST = atomicRequest(handlePOST);

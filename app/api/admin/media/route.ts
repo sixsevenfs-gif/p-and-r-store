@@ -1,6 +1,7 @@
 import { requireAdmin } from "../../_lib/admin";
 import { createSupabaseServerClient } from "../../../supabase/server";
 import { env } from "@/db/runtime";
+import { imageMime } from "@/app/image-signature";
 
 const BUCKET = "product-images";
 
@@ -36,7 +37,9 @@ export async function POST(request: Request) {
   if (!(file instanceof File) || !allowed.has(file.type) || file.size > 8_000_000) {
     return Response.json({ error: "Upload a JPG, PNG, WebP or AVIF under 8 MB." }, { status: 400 });
   }
-  const ext = file.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "").toLowerCase() || "jpg";
+  const bytes = Buffer.from(await file.arrayBuffer());
+  if (!bytes.length || imageMime(bytes) !== file.type) return Response.json({ error: "The file contents do not match a supported image." }, { status: 400 });
+  const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" }[file.type];
   const key = `database/${crypto.randomUUID()}.${ext}`;
   try {
     const result = await env.DB.prepare(`INSERT INTO media_assets(object_key,filename,content_type,size_bytes,display_name,uploaded_by,data)
@@ -47,7 +50,7 @@ export async function POST(request: Request) {
       file.size,
       file.name.slice(0, 200),
       admin.userId,
-      new Uint8Array(await file.arrayBuffer()),
+      bytes,
     ).run();
     return Response.json({ url: `/api/media-db/${result.meta.last_row_id}` }, { status: 201 });
   } catch (error) {

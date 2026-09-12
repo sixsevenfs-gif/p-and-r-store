@@ -21,6 +21,7 @@ async function audit(email:string, action:string, resource:string, id:unknown, d
     .bind(email, action, resource, id == null ? null : String(id), JSON.stringify(detail)).run();
 }
 async function ensureProducts() {
+  if (process.env.NODE_ENV === "production" || process.env.ALLOW_DEVELOPMENT_SEED !== "true") return;
   const count = await env.DB.prepare("SELECT count(*) AS count FROM products").first<{count:number}>();
   if (Number(count?.count)) return;
   for (const p of seedProducts) {
@@ -46,7 +47,7 @@ export async function GET(request:Request) {
   const col=searchColumns[resource]||"id", where=q?` WHERE CAST(${col} AS TEXT) LIKE ?`:"";
   const params=q?[`%${q}%`,limit,offset]:[limit,offset];
   const [rows,total]=await Promise.all([
-    env.DB.prepare(`SELECT * FROM ${resource}${where} ORDER BY ${resource==="store_settings"?"key":"rowid"} DESC LIMIT ? OFFSET ?`).bind(...params).all(),
+    env.DB.prepare(`SELECT * FROM ${resource}${where} ORDER BY ${resource==="store_settings"?"key":resource==="admin_roles"?"email":"rowid"} DESC LIMIT ? OFFSET ?`).bind(...params).all(),
     env.DB.prepare(`SELECT count(*) count FROM ${resource}${where}`).bind(...(q?[`%${q}%`]:[])).first<{count:number}>(),
   ]);
   if(resource==="products"){
@@ -72,6 +73,7 @@ export async function GET(request:Request) {
 export async function POST(request:Request) {
   const admin=await requireAdmin(request); if(!admin)return Response.json({error:"Admin access required"},{status:403}); const email=admin.email;
   const body=await request.json() as Record<string,unknown>; const resource=String(body.resource||"");
+  if(["products","product_variants","customers","returns","referrals","wallet_ledger","payouts","admin_roles"].includes(resource))return Response.json({error:"Use the dedicated workflow; generic financial/identity writes are disabled."},{status:403});
   if(!editable[resource])return Response.json({error:"Resource is not writable"},{status:400});
   const data=(body.data||{}) as Record<string,unknown>, keys=editable[resource].filter(k=>data[k]!==undefined);
   if(!keys.length)return Response.json({error:"No valid fields"},{status:400});
@@ -84,6 +86,7 @@ export async function POST(request:Request) {
 export async function PATCH(request:Request) {
   const admin=await requireAdmin(request); if(!admin)return Response.json({error:"Admin access required"},{status:403}); const email=admin.email;
   const body=await request.json() as Record<string,unknown>; const resource=String(body.resource||""), id=body.id;
+  if(["products","product_variants","customers","returns","referrals","wallet_ledger","payouts","admin_roles"].includes(resource))return Response.json({error:"Use the dedicated workflow; generic financial/identity writes are disabled."},{status:403});
   if(!editable[resource]||id==null)return Response.json({error:"Invalid update"},{status:400});
   const data=(body.data||{}) as Record<string,unknown>, keys=editable[resource].filter(k=>data[k]!==undefined);
   if(!keys.length)return Response.json({error:"No valid fields"},{status:400});
@@ -130,6 +133,7 @@ export async function PATCH(request:Request) {
 export async function DELETE(request:Request) {
   const admin=await requireAdmin(request); if(!admin)return Response.json({error:"Admin access required"},{status:403}); const email=admin.email;
   const body=await request.json() as {resource?:string,id?:unknown};
+  if(!["categories","collections","content_sections"].includes(body.resource||""))return Response.json({error:"Deletion is not supported for this resource."},{status:403});
   if(!editable[body.resource||""]||body.id==null)return Response.json({error:"Invalid deletion"},{status:400});
   if (body.resource === "admin_roles") {
     const target = await env.DB.prepare("SELECT role,status FROM admin_roles WHERE email=?").bind(body.id).first<{ role:string; status:string }>();

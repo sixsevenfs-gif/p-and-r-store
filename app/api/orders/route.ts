@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+import { atomicRequest } from "@/app/api/_lib/atomic";
 import { env } from "@/db/runtime";
 import { requireApiCustomer } from "../_lib/account";
 import { ensureCatalog } from "../_lib/catalog";
@@ -24,7 +26,7 @@ async function discountFor(code: string, subtotal: number, customerId: number) {
   return { id: Number(coupon.id), code: String(coupon.code), amount: Math.min(subtotal, raw, Number(coupon.maximum_discount ?? raw)) };
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let orderId: number | null = null;
   let walletDebit: { customerId: number; amount: number } | null = null;
   const decremented: Line[] = [];
@@ -40,22 +42,24 @@ export async function POST(request: Request) {
     if (!/^[0-9a-f-]{36}$/i.test(checkoutKey) || !paymentMethods.has(paymentMethod)) return Response.json({ error: "Invalid checkout session or payment method." }, { status: 400 });
     if (!items.length || items.length > 30 || items.some((item) => (!Number.isInteger(item.variantId) && !(clean(item.productSlug, 120) && clean(item.size, 16))) || !Number.isInteger(item.quantity) || Number(item.quantity) < 1 || Number(item.quantity) > 10)) return Response.json({ error: "Your bag contains an invalid item." }, { status: 400 });
     const session = await getAuthSession(request);
+    const verifiedCustomer = await requireApiCustomer(request);
+    if (!verifiedCustomer) return Response.json({ error: "Verify your mobile number and sign in before placing an order." }, { status: 401 });
     if (session?.user?.phone && normalizeIndianPhone(session.user.phone) !== phone) return Response.json({ error: "Checkout mobile number must match your signed-in account." }, { status: 403 });
-    const email = session?.user?.email?.trim().toLowerCase() || `phone-${phone.replace(/\D/g, "")}@members.invalid`;
-    const requestedWalletAmount = Math.max(0, Math.floor(Number(body.walletAmount) || 0));
+    const email = verifiedCustomer.email;
+    const requestedWalletAmount = Number(body.walletAmount || 0);
+    if (!Number.isSafeInteger(requestedWalletAmount) || requestedWalletAmount < 0) return Response.json({ error: "Invalid wallet amount." }, { status: 400 });
     const signedInCustomer = session?.user ? await requireApiCustomer(request) : null;
     await captureEmailContact(contactEmail, "checkout");
 
     await ensureCatalog();
     await releaseExpiredUniqueReservations();
-    await env.DB.prepare(`INSERT INTO customers(email,first_name,last_name,address,city,pin_code,phone,referral_code) VALUES (?,?,?,?,?,?,?,?)
-      ON CONFLICT(email) DO UPDATE SET first_name=excluded.first_name,last_name=excluded.last_name,address=excluded.address,city=excluded.city,pin_code=excluded.pin_code,phone=excluded.phone,updated_at=unixepoch()`)
-      .bind(email, firstName, lastName, address, city, pinCode, phone, `GUEST${crypto.randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`).run();
-    const customer = await env.DB.prepare("SELECT id FROM customers WHERE email=?").bind(email).first<{ id:number }>();
+    const customer = verifiedCustomer;
     if (!customer) throw new Error("Customer creation failed.");
+    const fingerprint = createHash("sha256").update(JSON.stringify({ phone, contactEmail, firstName, lastName, address, city, pinCode, paymentMethod, wallet: requestedWalletAmount, coupon: clean(body.couponCode, 48), items: [...items].sort((a,b) => JSON.stringify(a).localeCompare(JSON.stringify(b))) })).digest("hex");
     const existing = await env.DB.prepare("SELECT * FROM orders WHERE checkout_key=?").bind(checkoutKey).first<Record<string, unknown>>();
     if (existing) {
       if (Number(existing.customer_id) !== customer.id) return Response.json({ error: "Checkout session is already in use." }, { status: 409 });
+      if (existing.checkout_fingerprint !== fingerprint) return Response.json({ error: "Checkout contents changed. Start a new checkout session." }, { status: 409 });
       return Response.json({ orderId: existing.id, duplicate: true, paymentStatus: existing.payment_status, payableAmount: existing.payable_amount });
     }
 
@@ -67,12 +71,13 @@ export async function POST(request: Request) {
     }
     const lines: Line[] = [];
     for (const { item, quantity } of requested.values()) {
+      if (quantity > 10) return Response.json({ error: "A maximum of 10 units per size is allowed." }, { status: 400 });
       const byId = Number.isInteger(item.variantId);
       const row = await env.DB.prepare(`SELECT v.id variant_id,v.size,v.color,v.stock,v.reserved_stock,v.price variant_price,p.slug,p.name,p.price,p.status,p.edition_number,p.is_unique_find,p.unique_find_status,
         (SELECT id FROM unique_find_reservations r WHERE r.customer_id=? AND r.variant_id=v.id AND r.status='active' AND r.expires_at>unixepoch() ORDER BY r.id DESC LIMIT 1) reservation_id
         FROM product_variants v JOIN products p ON p.id=v.product_id WHERE ${byId ? "v.id=?" : "p.slug=? AND v.size=?"} AND v.active=1 AND p.status='published'`)
         .bind(customer.id, ...(byId ? [Number(item.variantId)] : [clean(item.productSlug, 120), clean(item.size, 16)])).first<Record<string, unknown>>();
-      const unique = Boolean(row?.is_unique_find);
+      const unique = Number(row?.is_unique_find) === 1;
       if (!row || (unique ? (quantity !== 1 || row.unique_find_status === "closed") : Number(row.stock) - Number(row.reserved_stock) < quantity)) return Response.json({ error: unique ? "This limited T-shirt is no longer available." : "One of your selected sizes just sold out. Refresh your bag and try again." }, { status: 409 });
       if (unique && !row.reservation_id) {
         const secured = await env.DB.prepare("UPDATE product_variants SET reserved_stock=reserved_stock+? WHERE id=? AND active=1 AND stock-reserved_stock>=?").bind(quantity, Number(row.variant_id), quantity).run();
@@ -100,6 +105,7 @@ export async function POST(request: Request) {
       paymentMethod === "cod" ? "pending" : "awaiting_payment", "pending", paymentMethod,
       JSON.stringify({ firstName, lastName, address, city, pinCode, phone, email: contactEmail }), coupon.code).run();
     orderId = Number(result.meta.last_row_id);
+    await env.DB.prepare("UPDATE orders SET checkout_fingerprint=? WHERE id=?").bind(fingerprint, orderId).run();
     if (!orderId) throw new Error("Order creation failed.");
     for (const line of lines) {
       const changed = line.isUniqueFind
@@ -145,3 +151,5 @@ export async function GET() {
   const orders = await env.DB.prepare("SELECT id,created_at,status,payment_status,payment_method,total_amount,payable_amount FROM orders WHERE customer_id=? ORDER BY created_at DESC").bind(customer.id).all();
   return Response.json({ orders: orders.results });
 }
+
+export const POST = atomicRequest(handlePOST);

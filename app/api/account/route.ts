@@ -65,7 +65,8 @@ export async function PATCH(request: Request) {
     const payload = await request.json() as { firstName?: string; lastName?: string; phone?: string; referralCode?: string };
     const firstName = payload.firstName?.trim().slice(0, 60) || customer.firstName;
     const lastName = payload.lastName?.trim().slice(0, 60) || customer.lastName;
-    const phone = payload.phone?.trim().replace(/[^\d+ -]/g, "").slice(0, 20) ?? customer.phone;
+    if (payload.phone !== undefined && payload.phone !== customer.phone) return Response.json({ error: "Changing your verified phone requires a new verification flow." }, { status: 400 });
+    const phone = customer.phone;
     await getDb().update(customers).set({ firstName, lastName, phone, updatedAt: new Date() }).where(eq(customers.id, customer.id));
     await attachReferral(customer.id, payload.referralCode);
     return Response.json({ updated: true });

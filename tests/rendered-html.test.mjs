@@ -88,9 +88,7 @@ test("credits completed return refunds to the P&R wallet once", async () => {
     read("../app/api/admin/orders/route.ts"),
     read("../app/admin/order-manager.tsx"),
   ]);
-  assert.match(ordersAdmin, /'return_refund','available'/);
-  assert.match(ordersAdmin, /return-refund:\$\{orderId\}/);
-  assert.match(ordersAdmin, /ON CONFLICT\(idempotency_key\) DO NOTHING/);
+  assert.match(ordersAdmin, /await returnOrderCredit\(orderId\)/);
   assert.match(ordersAdmin, /Refund added to P&R Wallet/);
   assert.match(orderManager, /P&R Wallet/);
 });

@@ -6,6 +6,13 @@ export function proxy(request: NextRequest) {
   // Publishing customer pages requires an explicit production mode.
   const mode = process.env.APP_MODE || (process.env.NODE_ENV === "production" ? "admin" : "all");
   const path = request.nextUrl.pathname;
+  if (path.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(request.method)
+    && path !== "/api/payments/webhook") {
+    const origin = request.headers.get("origin");
+    if (request.headers.get("sec-fetch-site") === "cross-site" || (origin && origin !== request.nextUrl.origin)) {
+      return NextResponse.json({ error: "Cross-origin mutations are not allowed." }, { status: 403 });
+    }
+  }
   const unavailable = () => new NextResponse("Not found", {
     status: 404,
     headers: { "Cache-Control": "no-store" },
