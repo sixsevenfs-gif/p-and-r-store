@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion"
 import { ArrowLeft, ArrowRight, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, Heart, MapPin, Menu, Minus, Plus, Search, ShieldCheck, ShoppingBag, Truck, UserRound, WalletCards, X } from "lucide-react";
 import Image from "next/image";
 import { productInformation, printCare, shippingAndReturns } from "./product-information";
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { products as seedProducts, type Product } from "./product-data";
 
 type View = "home" | "collection" | "product" | "cart" | "checkout" | "about" | "account" | "wishlist" | "unique" | "refund-policy";
@@ -65,7 +65,7 @@ export default function Home() {
     return () => window.clearTimeout(timeout);
   }, [cartNotice]);
   useEffect(() => { document.body.style.overflow = menuOpen || searchOpen ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [menuOpen, searchOpen]);
-  const go = (next: View) => { setView(next); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:next}, "", next === "home" ? "/" : `/${next === "collection" ? "shop" : next === "cart" ? "bag" : next}`); requestAnimationFrame(() => scrollTo({ top: 0, behavior: next === "cart" ? "auto" : "smooth" })); };
+  const go = (next: View) => { setView(next); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:next}, "", next === "home" ? "/" : `/${next === "unique" ? "unique-finds" : next === "collection" ? "shop" : next === "cart" ? "bag" : next}`); requestAnimationFrame(() => scrollTo({ top: 0, behavior: next === "cart" ? "auto" : "smooth" })); };
   const goCollection = (filter: "All" | "New" | "Men" | "Women" = "All") => { setCollectionFilter(filter); go("collection"); };
   const goAccount = (tab: AccountTab = "overview") => { setView("account"); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:"account",tab}, "", tab === "overview" ? "/account" : `/account?tab=${tab}`); requestAnimationFrame(() => scrollTo({top:0,behavior:"smooth"})); };
   const goWallet = () => goAccount("wallet");
@@ -461,7 +461,7 @@ function ProductGallery({product,close}:{product:Product;close:()=>void}) {
 
 function ProductInfo({product,onAdd,onBuy}:{product:Product;onAdd:(item:Product)=>void;onBuy:(item:Product)=>void}) {
   const information = productInformation(product);
-  const availableVariants = product.variants?.filter((variant) => variant.stock > 0) ?? [];
+  const availableVariants = useMemo(() => product.variants?.filter((variant) => variant.stock > 0) ?? [], [product.variants]);
   const [size,setSize]=useState(() => availableVariants.find((variant) => variant.size === "M")?.size || availableVariants[0]?.size || "M");
   const [open,setOpen]=useState("Details");
   const [sizeGuideOpen,setSizeGuideOpen]=useState(false);

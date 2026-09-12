@@ -38,7 +38,7 @@ function replacePlaceholders(input: string) {
   for (let cursor = 0; cursor < input.length; cursor++) {
     const char = input[cursor];
     if (quote) {
-      output += char;
+      output += quote === "`" && char === "`" ? '"' : char;
       if (char === quote) {
         if (input[cursor + 1] === quote) output += input[++cursor];
         else quote = null;
@@ -106,6 +106,11 @@ function translate(input: string) {
     statement += " ON CONFLICT DO NOTHING";
   statement = replacePlaceholders(statement);
   const insert = statement.match(/^INSERT\s+INTO\s+["`]?([a-z_]+)["`]?/i);
+  // SQLite treats an explicit NULL primary key as auto-increment; PostgreSQL
+  // requires DEFAULT. Drizzle's SQLite dialect emits this for generated IDs.
+  if (insert && identityTables.has(insert[1]) && /^INSERT\s+INTO\s+"?[a-z_]+"?\s*\(\s*"?id"?\s*,/i.test(statement)) {
+    statement = statement.replace(/\bVALUES\s*\(\s*null\s*,/i, 'VALUES (DEFAULT,');
+  }
   if (
     insert &&
     identityTables.has(insert[1]) &&

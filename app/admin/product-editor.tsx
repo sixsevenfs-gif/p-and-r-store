@@ -97,7 +97,7 @@ export default function ProductEditor({ productId }: { productId?: number }) {
         .then(
           (body) =>
             body?.editionNumber &&
-            set("editionNumber", String(body.editionNumber)),
+            setForm((previous) => ({ ...previous, editionNumber: String(body.editionNumber) })),
         )
         .catch(() => {});
       return;

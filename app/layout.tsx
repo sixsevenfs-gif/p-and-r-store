@@ -6,7 +6,9 @@ import "./unique-finds.css";
 import "./product-layout-fixes.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.RENDER_EXTERNAL_URL || "http://localhost:3000";
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "P&R — Oversized Essentials",
   description: "Considered oversized essentials. Less Noise. More Presence.",
   icons:{icon:"/favicon.svg"},

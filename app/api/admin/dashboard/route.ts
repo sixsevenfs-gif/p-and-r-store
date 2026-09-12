@@ -1,11 +1,9 @@
 import { env } from "@/db/runtime";
 import { requireAdmin } from "../../_lib/admin";
 
-type NumberRow = { value: number | null };
 type MetricsRow = { revenue:number;previous_revenue:number;orders:number;previous_orders:number;customers:number;previous_customers:number;low_stock:number;products:number;notifications:number };
 const validRevenue = "(payment_status='paid' OR status IN ('confirmed','packed','shipped','delivered')) AND status NOT IN ('cancelled','returned','failed')";
 const statusGroups: Record<string, string[]> = { paid: ["confirmed"], processing: ["pending", "awaiting_payment", "packed"], shipped: ["shipped"], delivered: ["delivered"], cancelled: ["cancelled", "returned", "failed", "return_requested"] };
-const number = (row: NumberRow | null | undefined) => Number(row?.value ?? 0);
 const daysAgo = (days: number) => Math.floor(Date.now() / 1000) - days * 86_400;
 
 export async function GET(request: Request) {

@@ -43,7 +43,7 @@ async function handlePOST(request: Request) {
     if (!items.length || items.length > 30 || items.some((item) => (!Number.isInteger(item.variantId) && !(clean(item.productSlug, 120) && clean(item.size, 16))) || !Number.isInteger(item.quantity) || Number(item.quantity) < 1 || Number(item.quantity) > 10)) return Response.json({ error: "Your bag contains an invalid item." }, { status: 400 });
     const session = await getAuthSession(request);
     const verifiedCustomer = await requireApiCustomer(request);
-    if (!verifiedCustomer) return Response.json({ error: "Verify your mobile number and sign in before placing an order." }, { status: 401 });
+    if (!verifiedCustomer) return Response.json({ error: "Sign in with your name and mobile number before placing an order." }, { status: 401 });
     if (session?.user?.phone && normalizeIndianPhone(session.user.phone) !== phone) return Response.json({ error: "Checkout mobile number must match your signed-in account." }, { status: 403 });
     const email = verifiedCustomer.email;
     const requestedWalletAmount = Number(body.walletAmount || 0);

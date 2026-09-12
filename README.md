@@ -83,20 +83,26 @@ Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`,
 `ADMIN_PHONE_NUMBERS`, `MEMBER_SESSION_SECRET`, and `NODE_VERSION=22.13.0` in
 Render. Never commit `.env.local`.
 
+Set `NEXT_PUBLIC_SITE_URL` to the exact public HTTPS origin so Open Graph and
+Twitter image URLs resolve correctly when links are shared.
+
 Once Render provides the production URL, set that exact origin as Supabase
 Authentication's Site URL and add `https://your-service.onrender.com/**` to the
 allowed Redirect URLs.
 
-## Separate operations and public deployments
+## Deployment modes
 
-Set `APP_MODE=admin` on the current Render service. `/` redirects to `/admin`;
+Leave `APP_MODE` unset (or set it to `all`) for one complete deployment serving
+both the storefront and the protected admin panel. This is the default.
+
+For intentionally separate operations and public deployments, set
+`APP_MODE=admin` on the operations service. `/` redirects to `/admin`;
+
 customer pages (including `/user`, `/shop`, login and checkout) return 404.
 Backend APIs remain available and admin authentication is still required.
-Production defaults to this mode when `APP_MODE` is unset.
 
-For local storefront development, run `npm run dev` and open `/`. Development
-defaults to `all`, exposing both storefront and admin. Set `APP_MODE=storefront`
-in `.env.local` to preview the public deployment's restrictions.
+Set `APP_MODE=storefront` to expose customer pages while returning 404 for the
+admin UI and admin APIs.
 
 Later, create a separate public service from this repository with
 `APP_MODE=storefront` and the required Supabase, database and payment settings.
@@ -112,5 +118,6 @@ only one service. Restart/redeploy after changing modes.
 npm run typecheck
 npm run lint
 npm test
+npm run test:commerce
 npm run build
 ```

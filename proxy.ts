@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 const within = (path: string, prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
 
 export function proxy(request: NextRequest) {
-  // Publishing customer pages requires an explicit production mode.
-  const mode = process.env.APP_MODE || (process.env.NODE_ENV === "production" ? "admin" : "all");
+  // A single deployment serves the complete store unless a split mode is explicit.
+  const mode = process.env.APP_MODE || "all";
   const path = request.nextUrl.pathname;
   if (path.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(request.method)
     && path !== "/api/payments/webhook") {

@@ -14,7 +14,8 @@ async function limited(key: string, maximum: number) {
       window_start=CASE WHEN auth_rate_limits.window_start < unixepoch()-900 THEN unixepoch() ELSE auth_rate_limits.window_start END
       RETURNING attempts`).bind(bucket).first<{ attempts: number }>();
     return !row || row.attempts > maximum;
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') console.error('Login throttle unavailable', error instanceof Error ? error.message : 'Database error');
     // Login remains available before the optional rate-limit migration is applied.
     return false;
   }
@@ -54,7 +55,8 @@ export async function phoneLogin(request: Request, purpose: "member" | "admin") 
     response.headers.set("Cache-Control", "no-store");
     response.headers.append("Set-Cookie", `pr_${purpose}=${token}; Path=/; Max-Age=${memberCookieOptions.maxAge}; HttpOnly; SameSite=Lax${memberCookieOptions.secure ? "; Secure" : ""}`);
     return response;
-  } catch {
+  } catch (error) {
+    console.error('Sign-in failed', { code: (error as { code?: string; cause?: { code?: string } }).cause?.code ?? (error as { code?: string }).code ?? 'LOGIN_FAILED' });
     return Response.json({ message: "Secure sign-in is temporarily unavailable. Please contact support." }, { status: 503 });
   }
 }
