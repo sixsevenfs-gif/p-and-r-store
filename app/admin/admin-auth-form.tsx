@@ -12,8 +12,8 @@ export default function AdminAuthForm() {
     event.preventDefault(); setBusy(true); setMessage("");
     try {
       const response = await fetch("/api/auth/admin", { method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin", signal: AbortSignal.timeout(20000), body: JSON.stringify({ name, phone }) });
-      const body = await response.json().catch(() => ({})) as { message?: string };
-      if (!response.ok) throw new Error(body.message || "Unable to sign in.");
+      const body = await response.json().catch(() => ({})) as { message?: string; error?: string };
+      if (!response.ok) throw new Error(body.message || body.error || `Unable to sign in (HTTP ${response.status}).`);
       window.location.assign("/admin/dashboard");
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to sign in."); }
     finally { setBusy(false); }

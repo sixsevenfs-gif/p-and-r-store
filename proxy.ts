@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 const within = (path: string, prefix: string) => path === prefix || path.startsWith(`${prefix}/`);
 
+function requestOrigins(request: NextRequest) {
+  const origins = new Set([request.nextUrl.origin]);
+  const host = (request.headers.get("x-forwarded-host") || request.headers.get("host") || "").split(",")[0].trim();
+  const protocol = (request.headers.get("x-forwarded-proto") || request.nextUrl.protocol.replace(":", "")).split(",")[0].trim();
+  if (host && /^(https?|http)$/.test(protocol)) origins.add(`${protocol}://${host}`);
+  return origins;
+}
+
 export function proxy(request: NextRequest) {
   // A single deployment serves the complete store unless a split mode is explicit.
   const mode = process.env.APP_MODE || "all";
@@ -9,7 +17,7 @@ export function proxy(request: NextRequest) {
   if (path.startsWith("/api/") && !["GET", "HEAD", "OPTIONS"].includes(request.method)
     && path !== "/api/payments/webhook") {
     const origin = request.headers.get("origin");
-    if (request.headers.get("sec-fetch-site") === "cross-site" || (origin && origin !== request.nextUrl.origin)) {
+    if (request.headers.get("sec-fetch-site") === "cross-site" || (origin && !requestOrigins(request).has(origin))) {
       return NextResponse.json({ error: "Cross-origin mutations are not allowed." }, { status: 403 });
     }
   }

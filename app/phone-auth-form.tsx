@@ -15,8 +15,8 @@ export default function PhoneAuthForm({ mode, nextPath }: Props) {
     event.preventDefault(); setBusy(true); setMessage("");
     try {
       const response = await fetch("/api/auth/member", { method: "POST", headers: { "content-type": "application/json" }, credentials: "same-origin", signal: AbortSignal.timeout(20000), body: JSON.stringify({ phone, name, email }) });
-      const body = await response.json().catch(() => ({})) as { message?: string };
-      if (!response.ok) throw new Error(body.message || "Unable to continue.");
+      const body = await response.json().catch(() => ({})) as { message?: string; error?: string };
+      if (!response.ok) throw new Error(body.message || body.error || `Unable to continue (HTTP ${response.status}).`);
       window.location.assign(nextPath);
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to continue."); }
     finally { setBusy(false); }
