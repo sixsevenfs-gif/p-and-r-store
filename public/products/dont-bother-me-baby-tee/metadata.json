@@ -1,0 +1,15 @@
+{
+  "name": "Don't Bother Me! Baby Tee",
+  "id": 24,
+  "editionNumber": 24,
+  "price": 1299,
+  "color": "White / Burgundy Print",
+  "category": "Women",
+  "note": "A fitted white baby tee with a burgundy cat graphic and ‘DON’T BOTHER ME!’ statement across the front. The blank back keeps the focus on the vintage-inspired print.\n\n180 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a ribbed crew neckline and double-stitched construction. Fitted baby-tee silhouette.",
+  "images": [
+    { "file": "front.png", "label": "Front Print" },
+    { "file": "back.png", "label": "Back" },
+    { "file": "closeup-fabric.png", "label": "Print Detail" },
+    { "file": "flatlay.png", "label": "Flatlay" }
+  ]
+}

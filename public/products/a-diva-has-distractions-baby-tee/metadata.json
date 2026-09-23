@@ -1,0 +1,15 @@
+{
+  "name": "A Diva Has Distractions Baby Tee",
+  "id": 22,
+  "editionNumber": 22,
+  "price": 1299,
+  "color": "Bone / Red Print",
+  "category": "Women",
+  "note": "A fitted bone baby tee with the playful ‘a diva has distractions’ chest print in red. The soft neutral base makes the graphic easy to pair with denim, cargos or a mini skirt.\n\n180 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a ribbed crew neckline and double-stitched construction. Fitted baby-tee silhouette.",
+  "images": [
+    { "file": "front.png", "label": "Front Print" },
+    { "file": "back.png", "label": "Back" },
+    { "file": "closeup-fabric.png", "label": "Print Detail" },
+    { "file": "flatlay.png", "label": "Flatlay" }
+  ]
+}

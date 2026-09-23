@@ -5,6 +5,40 @@ export type Product = { id: number; slug: string; name: string; price: number; c
 
 export const products: Product[] = [
   {
+    "id": 22,
+    "editionNumber": 22,
+    "slug": "a-diva-has-distractions-baby-tee",
+    "name": "A Diva Has Distractions Baby Tee",
+    "price": 1299,
+    "compareAtPrice": null,
+    "newArrival": true,
+    "color": "Bone / Red Print",
+    "category": "Women",
+    "note": "A fitted bone baby tee with the playful ‘a diva has distractions’ chest print in red. The soft neutral base makes the graphic easy to pair with denim, cargos or a mini skirt.\n\n180 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a ribbed crew neckline and double-stitched construction. Fitted baby-tee silhouette.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/a-diva-has-distractions-baby-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/a-diva-has-distractions-baby-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/a-diva-has-distractions-baby-tee/closeup-fabric.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/a-diva-has-distractions-baby-tee/flatlay.png"
+      }
+    ]
+  },
+  {
     "id": 1,
     "editionNumber": 1,
     "slug": "allergic-to-people-tee",
@@ -103,6 +137,40 @@ export const products: Product[] = [
         "key": "closeup-fabric",
         "label": "Print Detail",
         "src": "/products/born-to-slay-baby-tee/closeup-fabric.jpg"
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "editionNumber": 24,
+    "slug": "dont-bother-me-baby-tee",
+    "name": "Don't Bother Me! Baby Tee",
+    "price": 1299,
+    "compareAtPrice": null,
+    "newArrival": true,
+    "color": "White / Burgundy Print",
+    "category": "Women",
+    "note": "A fitted white baby tee with a burgundy cat graphic and ‘DON’T BOTHER ME!’ statement across the front. The blank back keeps the focus on the vintage-inspired print.\n\n180 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a ribbed crew neckline and double-stitched construction. Fitted baby-tee silhouette.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/dont-bother-me-baby-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/dont-bother-me-baby-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/dont-bother-me-baby-tee/closeup-fabric.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/dont-bother-me-baby-tee/flatlay.png"
       }
     ]
   },
@@ -243,6 +311,40 @@ export const products: Product[] = [
     ]
   },
   {
+    "id": 26,
+    "editionNumber": 26,
+    "slug": "good-grammar-is-sexy-tee",
+    "name": "Good Grammar Is Sexy Tee",
+    "price": 1299,
+    "compareAtPrice": null,
+    "newArrival": true,
+    "color": "Navy / Ivory Print",
+    "category": "Women",
+    "note": "A fitted navy tee with ‘Good grammar is sexy.’ set in crisp ivory lettering. Its clean back and deep blue tone make it an easy everyday statement piece.\n\n180 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a ribbed crew neckline and double-stitched construction. Fitted baby-tee silhouette.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/good-grammar-is-sexy-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/good-grammar-is-sexy-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/good-grammar-is-sexy-tee/closeup-fabric.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/good-grammar-is-sexy-tee/flatlay.png"
+      }
+    ]
+  },
+  {
     "id": 8,
     "editionNumber": 8,
     "slug": "hot-wife-tee",
@@ -307,6 +409,40 @@ export const products: Product[] = [
         "key": "neck",
         "label": "Neck",
         "src": "/products/i-hate-explaining-tee/neck.jpg"
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "editionNumber": 23,
+    "slug": "i-heart-hot-moms-baby-tee",
+    "name": "I Heart Hot Moms Baby Tee",
+    "price": 1299,
+    "compareAtPrice": null,
+    "newArrival": true,
+    "color": "Black / White & Red Print",
+    "category": "Women",
+    "note": "A fitted black baby tee with a bold white type graphic and a red heart at the chest. It has a clean plain back and an easy, close-to-body shape for everyday styling.\n\n180 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a ribbed crew neckline and double-stitched construction. Fitted baby-tee silhouette.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/i-heart-hot-moms-baby-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/i-heart-hot-moms-baby-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/i-heart-hot-moms-baby-tee/closeup-fabric.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/i-heart-hot-moms-baby-tee/flatlay.png"
       }
     ]
   },
@@ -715,6 +851,40 @@ export const products: Product[] = [
         "key": "flatlay",
         "label": "Flatlay",
         "src": "/products/same-shit-different-day/flatlay.jpg"
+      }
+    ]
+  },
+  {
+    "id": 25,
+    "editionNumber": 25,
+    "slug": "three-kisses-baby-tee",
+    "name": "Three Kisses Baby Tee",
+    "price": 1299,
+    "compareAtPrice": null,
+    "newArrival": true,
+    "color": "White / Red Print",
+    "category": "Women",
+    "note": "A fitted white baby tee with three red kiss prints down the front. The simple graphic brings a playful pop of colour while the back stays clean and plain.\n\n180 GSM, 100% super-combed cotton. Pre-shrunk and bio-washed, with a ribbed crew neckline and double-stitched construction. Fitted baby-tee silhouette.",
+    "gallery": [
+      {
+        "key": "front",
+        "label": "Front Print",
+        "src": "/products/three-kisses-baby-tee/front.png"
+      },
+      {
+        "key": "back",
+        "label": "Back",
+        "src": "/products/three-kisses-baby-tee/back.png"
+      },
+      {
+        "key": "closeup-fabric",
+        "label": "Print Detail",
+        "src": "/products/three-kisses-baby-tee/closeup-fabric.png"
+      },
+      {
+        "key": "flatlay",
+        "label": "Flatlay",
+        "src": "/products/three-kisses-baby-tee/flatlay.png"
       }
     ]
   }

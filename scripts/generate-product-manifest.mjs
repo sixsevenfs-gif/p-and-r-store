@@ -68,22 +68,26 @@ const directories = existsSync(productsRoot)
   ? readdirSync(productsRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name)
   : [];
 
-const products = directories.map((slug, index) => {
+const metadataBySlug = new Map(directories.map((slug) => [slug, readMetadata(slug)]));
+const legacySlugs = directories.filter((slug) => metadataBySlug.get(slug)?.id == null);
+
+const products = directories.map((slug) => {
   const productPath = join(productsRoot, slug);
-  const metadata = readMetadata(slug);
+  const metadata = metadataBySlug.get(slug) ?? {};
+  const legacyIndex = legacySlugs.indexOf(slug);
   const metadataImages = normalizeMetadataImages(metadata, slug);
   const files = readdirSync(productPath)
     .filter((file) => allowedExtensions.has(extensionOf(file)))
     .sort((a, b) => orderIndex(a) - orderIndex(b) || a.localeCompare(b));
 
   return {
-    id: metadata.id ?? index + 1,
-    editionNumber: metadata.editionNumber ?? metadata.id ?? index + 1,
+    id: metadata.id ?? legacyIndex + 1,
+    editionNumber: metadata.editionNumber ?? metadata.id ?? legacyIndex + 1,
     slug,
     name: metadata.name ?? titleFromSlug(slug),
     price: metadata.price ?? 1499,
     compareAtPrice: metadata.compareAtPrice ?? null,
-    newArrival: metadata.newArrival ?? index < 5,
+    newArrival: metadata.newArrival ?? (metadata.id != null || legacyIndex < 5),
     color: metadata.color ?? "White",
     category: metadata.category ?? "Men",
     note: metadata.note ?? "Oversized T-shirt with a premium everyday fit, clean construction and detailed product photography.",
