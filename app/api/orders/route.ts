@@ -7,6 +7,7 @@ import { getAuthSession } from "../../auth";
 import { normalizeIndianPhone } from "../_lib/account";
 import { releaseExpiredUniqueReservations } from "../_lib/unique-finds";
 import { captureEmailContact, normalizeContactEmail } from "../_lib/email-contacts";
+import { recordOrderActivity } from "../_lib/customer-activity";
 
 const pinPattern = /^\d{6}$/;
 const paymentMethods = new Set(["cod", "razorpay"]);
@@ -133,6 +134,8 @@ async function handlePOST(request: Request) {
     ];
     if (coupon.id) writes.push(env.DB.prepare("INSERT INTO coupon_usages(coupon_id,customer_id,order_id,discount_amount) VALUES (?,?,?,?)").bind(coupon.id, customer.id, orderId, coupon.amount), env.DB.prepare("UPDATE coupons SET usage_count=usage_count+1 WHERE id=?").bind(coupon.id));
     await env.DB.batch(writes);
+    // Journey tracking must never turn a successfully-created order into a failure.
+    await recordOrderActivity(customer.id, orderId).catch(() => undefined);
     return Response.json({ orderId, paymentMethod, subtotalAmount: subtotal, discountAmount: coupon.amount, shippingAmount: shipping, totalAmount: total, walletAmount: walletPaise, payableAmount: total - walletPaise }, { status: 201 });
   } catch (error) {
     if (decremented.length) await env.DB.batch(decremented.map((line) => env.DB.prepare(line.isUniqueFind ? "UPDATE product_variants SET stock=stock+?,reserved_stock=reserved_stock+? WHERE id=?" : "UPDATE product_variants SET stock=stock+? WHERE id=?").bind(...(line.isUniqueFind ? [line.quantity, line.quantity, line.variantId] : [line.quantity, line.variantId]))));

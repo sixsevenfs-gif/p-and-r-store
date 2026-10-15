@@ -67,6 +67,8 @@ export default function Home() {
   useEffect(() => { document.body.style.overflow = menuOpen || searchOpen ? "hidden" : ""; return () => { document.body.style.overflow = ""; }; }, [menuOpen, searchOpen]);
   const go = (next: View) => { setView(next); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:next}, "", next === "home" ? "/" : `/${next === "unique" ? "unique-finds" : next === "collection" ? "shop" : next === "cart" ? "bag" : next}`); requestAnimationFrame(() => scrollTo({ top: 0, behavior: next === "cart" ? "auto" : "smooth" })); };
   const goCollection = (filter: "All" | "New" | "Men" | "Women" = "All") => { setCollectionFilter(filter); go("collection"); };
+  const openCheckout = () => { void fetch("/api/customer-activity", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({event:"checkout_started"}) }).catch(() => undefined); go("checkout"); };
+  const returnToBag = () => { void fetch("/api/customer-activity", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({event:"checkout_back"}) }).catch(() => undefined); go("cart"); };
   const goAccount = (tab: AccountTab = "overview") => { setView("account"); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:"account",tab}, "", tab === "overview" ? "/account" : `/account?tab=${tab}`); requestAnimationFrame(() => scrollTo({top:0,behavior:"smooth"})); };
   const goWallet = () => goAccount("wallet");
   const goWishlist = () => { setView("wishlist"); setMenuOpen(false); setSearchOpen(false); setCartOpen(false); history.pushState({view:"wishlist"}, "", "/wishlist"); requestAnimationFrame(() => scrollTo({top:0,behavior:"smooth"})); };
@@ -184,12 +186,12 @@ export default function Home() {
       {view === "product" && <motion.div key="product" className="product-page" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
         <button className="back" onClick={() => go("collection")}><ArrowLeft size={15}/> Back to collection</button>
         <ProductGallery product={selected} close={() => go("collection")}/>
-        <ProductInfo product={selected} onAdd={(item) => add(item)} onBuy={(item) => { add(item); setCartOpen(false); go("checkout"); }}/>
+        <ProductInfo product={selected} onAdd={(item) => add(item)} onBuy={(item) => { add(item); setCartOpen(false); openCheckout(); }}/>
       </motion.div>}
 
-      {view === "cart" && <CartPage key="cart" cart={cart} add={add} updateQuantity={setCartQuantity} updateSize={setCartSize} openProduct={openProduct} shop={goCollection} checkout={() => go("checkout")}/>}
+      {view === "cart" && <CartPage key="cart" cart={cart} add={add} updateQuantity={setCartQuantity} updateSize={setCartSize} openProduct={openProduct} shop={goCollection} checkout={openCheckout}/>}
 
-      {view === "checkout" && <CheckoutPage cart={cart} backToCart={() => go("cart")} continueShopping={() => goCollection("All")} viewOrders={() => goAccount("orders")} onPlaced={() => {setCart([]);void refreshWallet();}}/>}
+      {view === "checkout" && <CheckoutPage cart={cart} backToCart={returnToBag} continueShopping={() => goCollection("All")} viewOrders={() => goAccount("orders")} onPlaced={() => {setCart([]);void refreshWallet();}}/>}
       {view === "account" && (
         <AccountPage shop={() => goCollection("All")} openProduct={openProduct}/>
       )}
@@ -204,9 +206,9 @@ export default function Home() {
       <div><b>Added to your bag</b><small>{cartNotice.name} · {cartNotice.selectedSize || "M"}</small></div>
       <button onClick={() => { setCartNotice(null); go("cart"); }}>View bag <ArrowRight size={14}/></button>
     </motion.aside>}</AnimatePresence>
-    <AnimatePresence>{reservationNotice&&<motion.div className="unique-reservation" role="dialog" aria-modal="true" aria-live="polite" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><motion.section initial={{scale:.96,y:14}} animate={{scale:1,y:0}} exit={{scale:.96,y:14}}><p>{reservationNotice.state==="securing"?"SECURING YOUR T-SHIRT":reservationNotice.state==="reserved"?"LIMITED T-SHIRT SECURED":"UNIQUE FIND"}</p><b>LIMITED TO {reservationNotice.product.lifetimeProductionCap||5} T-SHIRTS · NEVER RESTOCKED</b><h2>{reservationNotice.message}</h2>{reservationNotice.state==="securing"?<span>HOLDING YOUR T-SHIRT</span>:<div><button onClick={()=>{const saved=reservationNotice;setReservationNotice(null);if(saved.state==="reserved")go("checkout");}}>CONTINUE TO CHECKOUT</button><button onClick={()=>{setReservationNotice(null);go("cart")}}>VIEW BAG</button>{reservationNotice.state!=="reserved"&&<button onClick={()=>{setReservationNotice(null);go("unique")}}>RETURN TO UNIQUE FINDS</button>}</div>}</motion.section></motion.div>}</AnimatePresence>
+    <AnimatePresence>{reservationNotice&&<motion.div className="unique-reservation" role="dialog" aria-modal="true" aria-live="polite" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><motion.section initial={{scale:.96,y:14}} animate={{scale:1,y:0}} exit={{opacity:0}}><p>{reservationNotice.state==="securing"?"SECURING YOUR T-SHIRT":reservationNotice.state==="reserved"?"LIMITED T-SHIRT SECURED":"UNIQUE FIND"}</p><b>LIMITED TO {reservationNotice.product.lifetimeProductionCap||5} T-SHIRTS · NEVER RESTOCKED</b><h2>{reservationNotice.message}</h2>{reservationNotice.state==="securing"?<span>HOLDING YOUR T-SHIRT</span>:<div><button onClick={()=>{const saved=reservationNotice;setReservationNotice(null);if(saved.state==="reserved")openCheckout();}}>CONTINUE TO CHECKOUT</button><button onClick={()=>{setReservationNotice(null);go("cart")}}>VIEW BAG</button>{reservationNotice.state!=="reserved"&&<button onClick={()=>{setReservationNotice(null);go("unique")}}>RETURN TO UNIQUE FINDS</button>}</div>}</motion.section></motion.div>}</AnimatePresence>
     <AnimatePresence>{searchOpen && <SearchOverlay products={products} close={() => setSearchOpen(false)} openProduct={openProduct}/>}</AnimatePresence>
-    <AnimatePresence>{cartOpen && <Cart cart={cart} close={()=>setCartOpen(false)} remove={(i)=>setCart(c=>c.filter((_,x)=>x!==i))} checkout={()=>{setCartOpen(false);go("checkout")}}/>}</AnimatePresence>
+    <AnimatePresence>{cartOpen && <Cart cart={cart} close={()=>setCartOpen(false)} remove={(i)=>setCart(c=>c.filter((_,x)=>x!==i))} checkout={()=>{setCartOpen(false);openCheckout()}}/>}</AnimatePresence>
     <AnimatePresence>{menuOpen && <motion.div className="menu" initial={{x:"-100%"}} animate={{x:0}} exit={{x:"-100%"}} transition={{ease:[.22,1,.36,1],duration:.55}}><button onClick={()=>setMenuOpen(false)} aria-label="Close menu"><X/></button><nav><button onClick={()=>go("home")}>Shop</button><button onClick={()=>goCollection("New")}>New Drop</button><button onClick={()=>goCollection("Men")}>Men</button><button onClick={()=>goCollection("Women")}>Women</button><button onClick={()=>go("unique")}>Unique Finds</button><button onClick={()=>go("about")}>About</button><button onClick={()=>goAccount()}>Account</button><button onClick={()=>setSearchOpen(true)}>Search</button></nav><p>Less noise. More presence.</p></motion.div>}</AnimatePresence>
   </main>
 }

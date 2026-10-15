@@ -1,8 +1,8 @@
 import { env } from "@/db/runtime";
 
-type ActivityItem = { name: string; slug: string; size: string; color: string; quantity: number; unitPrice: number };
+type ActivityItem = { name: string; slug: string; size: string; color: string; quantity: number; unit_price: number };
 
-export async function recordCartActivity(customerId: number, cartId: number, eventType: "bag_updated" | "checkout_started") {
+export async function recordCartActivity(customerId: number, cartId: number, eventType: "bag_updated" | "checkout_started" | "checkout_back") {
   const items = await env.DB.prepare(`SELECT p.name,p.slug,v.size,v.color,ci.quantity,coalesce(v.price,p.price) unit_price
     FROM cart_items ci JOIN product_variants v ON v.id=ci.variant_id JOIN products p ON p.id=v.product_id
     WHERE ci.cart_id=? ORDER BY ci.created_at DESC`).bind(cartId).all<ActivityItem>();
