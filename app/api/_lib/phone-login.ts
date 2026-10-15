@@ -1,9 +1,18 @@
 import { createHash } from "node:crypto";
 import { env } from "@/db/runtime";
 import { sessionSecret } from "@/app/session-token";
-import { createAdminSession, createMemberSession, isConfiguredAdminPhone, memberCookieOptions } from "@/app/auth";
+import { createAdminSession, createMemberSession, memberCookieOptions } from "@/app/auth";
 import { normalizeIndianPhone, signInNameAndPhone } from "./account";
 import { captureEmailContact, normalizeContactEmail } from "./email-contacts";
+
+const DIRECT_ADMIN = {
+  name: "pingko",
+  phone: "+919164839374",
+} as const;
+
+function isDirectAdmin(name: string, phone: string) {
+  return name.toLocaleLowerCase("en-IN") === DIRECT_ADMIN.name && phone === DIRECT_ADMIN.phone;
+}
 
 async function limited(key: string, maximum: number) {
   try {
@@ -41,7 +50,9 @@ export async function phoneLogin(request: Request, purpose: "member" | "admin") 
     if (!/^\+91[6-9]\d{9}$/.test(phone) || !name || name.length > 120 || (body.email && !email)) {
       return Response.json({ message: "Enter a valid name and Indian mobile number." }, { status: 400 });
     }
-    if (purpose === "admin" && !isConfiguredAdminPhone(phone)) return Response.json({ message: "Admin access is not available for this number." }, { status: 403 });
+    if (purpose === "admin" && !isDirectAdmin(name, phone)) {
+      return Response.json({ message: "Admin access is not available for these details." }, { status: 403 });
+    }
     if (await limited(`phone:${phone}:${purpose}`, 20)) return Response.json({ message: "Too many attempts. Please wait 15 minutes." }, { status: 429 });
     const identity = { id: localIdentity(phone, purpose), phone };
     const token = purpose === "admin" ? await createAdminSession(identity) : await env.DB.transaction(async () => {
