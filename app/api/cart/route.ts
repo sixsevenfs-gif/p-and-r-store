@@ -3,6 +3,7 @@ import { env } from "@/db/runtime";
 import { requireApiCustomer } from "../_lib/account";
 import { ensureCatalog } from "../_lib/catalog";
 import { releaseExpiredUniqueReservations } from "../_lib/unique-finds";
+import { recordCartActivity } from "../_lib/customer-activity";
 
 async function cartFor(customerId: number) {
   await env.DB.prepare("INSERT INTO carts(customer_id) VALUES (?) ON CONFLICT(customer_id) DO NOTHING").bind(customerId).run();
@@ -42,6 +43,7 @@ async function handlePOST(request: Request) {
       ON CONFLICT(cart_id,variant_id) DO UPDATE SET quantity=excluded.quantity`).bind(cart!.id, variantId, combined),
     env.DB.prepare("UPDATE carts SET updated_at=unixepoch() WHERE id=?").bind(cart!.id),
   ]);
+  await recordCartActivity(customer.id, cart!.id, "bag_updated");
   return Response.json({ added: true }, { status: 201 });
 }
 
@@ -73,6 +75,7 @@ async function handlePATCH(request: Request) {
         ON CONFLICT(cart_id,variant_id) DO UPDATE SET quantity=excluded.quantity`).bind(cart!.id, nextVariantId, combined),
       env.DB.prepare("UPDATE carts SET updated_at=unixepoch() WHERE id=?").bind(cart!.id),
     ]);
+    await recordCartActivity(customer.id, cart!.id, "bag_updated");
     return Response.json({ updated: true });
   }
   if (quantity === 0) {
@@ -85,6 +88,7 @@ async function handlePATCH(request: Request) {
     if (!variant || variant.available < quantity) return Response.json({ error: "The requested quantity is unavailable." }, { status: 409 });
     await env.DB.prepare("UPDATE cart_items SET quantity=? WHERE cart_id=? AND variant_id=?").bind(quantity, cart!.id, variantId).run();
   }
+  await recordCartActivity(customer.id, cart!.id, "bag_updated");
   return Response.json({ updated: true });
 }
 
@@ -96,6 +100,7 @@ async function handleDELETE(request: Request) {
   const cart = await cartFor(customer.id);
   const reservation = await env.DB.prepare("SELECT id,quantity FROM unique_find_reservations WHERE cart_id=? AND variant_id=? AND status='active'").bind(cart!.id, variantId).first<{ id:number; quantity:number }>();
   await env.DB.batch([env.DB.prepare("DELETE FROM cart_items WHERE cart_id=? AND variant_id=?").bind(cart!.id, variantId), ...(reservation ? [env.DB.prepare("UPDATE unique_find_reservations SET status='released',updated_at=unixepoch() WHERE id=?").bind(reservation.id), env.DB.prepare("UPDATE product_variants SET reserved_stock=greatest(0,reserved_stock-?) WHERE id=?").bind(reservation.quantity, variantId)] : [])]);
+  await recordCartActivity(customer.id, cart!.id, "bag_updated");
   return Response.json({ deleted: true });
 }
 
